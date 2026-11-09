@@ -16,3 +16,5 @@ MIDDLEWARE = MIDDLEWARE + [  # noqa: F405
     "common.middleware.workspace_context.WorkspaceContextMiddleware",
 ]
 AXES_ENABLED = False
+DEBUG = False
+DEBUG_PROPAGATE_EXCEPTIONS = True

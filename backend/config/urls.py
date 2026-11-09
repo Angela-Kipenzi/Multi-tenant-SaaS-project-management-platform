@@ -10,13 +10,13 @@ api_v1_patterns = [
     path("auth/", include("apps.accounts.urls_auth")),
     path("", include("apps.accounts.urls_members")),
     path("", include("apps.tenants.urls")),
-    # Enabled as each phase lands:
-    # path("", include("apps.projects.urls")),       # Phase C
-    # path("", include("apps.boards.urls")),         # Phase C
-    # path("", include("apps.issues.urls")),         # Phase C
-    # path("", include("apps.audit.urls")),          # Phase E
-    # path("", include("apps.notifications.urls")),  # Phase E
-    # path("", include("apps.billing.urls")),        # Phase F
+    
+    path("", include("apps.projects.urls")),       
+    path("", include("apps.boards.urls")),         
+    path("", include("apps.issues.urls")),         
+    # path("", include("apps.audit.urls")),          
+    # path("", include("apps.notifications.urls")), 
+    # path("", include("apps.billing.urls")),        
 ]
 
 urlpatterns = [

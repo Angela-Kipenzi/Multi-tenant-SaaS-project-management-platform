@@ -362,4 +362,13 @@ def test_attachment_create_foreign_issue_returns_404(api_client, owner):
         format="json",
     )
     assert r.status_code == 404
-    
+
+
+#--------------------------------------------------------------------------- #
+#billing tests
+# --------------------------------------------------------------------------- #
+def test_billing_plan_foreign_returns_404(api_client, owner):
+    other = OwnerMembershipFactory()
+    client = _client_with_token(api_client, owner)
+    r = client.get(f"/api/v1/workspaces/{other.workspace.id}/billing/plan/")
+    assert r.status_code == 404

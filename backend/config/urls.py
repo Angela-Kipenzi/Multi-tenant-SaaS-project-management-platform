@@ -16,7 +16,7 @@ api_v1_patterns = [
     path("", include("apps.issues.urls")),         
     # path("", include("apps.audit.urls")),          
     path("", include("apps.notifications.urls")), 
-    # path("", include("apps.billing.urls")),        
+    path("", include("apps.billing.urls")),        
 ]
 
 urlpatterns = [

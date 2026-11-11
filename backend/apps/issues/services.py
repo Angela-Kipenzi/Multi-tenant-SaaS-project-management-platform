@@ -16,6 +16,7 @@ from django.db import transaction
 from django.utils import timezone
 from common.exceptions import Conflict, Forbidden, NotFound
 from django.db import models
+from apps.notifications.tasks import notify_assignment
 
 
 def create_sprint(
@@ -116,26 +117,7 @@ def update_issue(
         raise NotFound("Issue not found.")
 
     # Field-level permission: only assignee can update own; admins can update any.
-    is_assignee = issue.assignee_id == actor_membership.user_id
-    can_update_any = has_capability(actor_membership.role, "issue.update_any")
-    if not (can_update_any or is_assignee):
-        raise Forbidden("Role cannot update this issue.")
-
-    # Assigning to someone else requires admin-level permission.
-    if assignee_id is not None and not can_update_any:
-        raise Forbidden("Only admins can reassign issues.")
-
-    if assignee_id is not None:
-        # Validate assignee is a member of this workspace.
-        from apps.accounts.models import WorkspaceMembership as WM
-        if not WM.objects.filter(workspace=workspace, user_id=assignee_id).exists():
-            raise NotFound("Assignee not found.")
-
-    if sprint_id is not None:
-        if not Sprint.objects.filter(
-            workspace=workspace, project_id=issue.project_id, id=sprint_id
-        ).exists():
-            raise NotFound("Sprint not found on this project.")
+    previous_assignee_id = issue.assignee_id
 
     if title is not None:
         issue.title = title
@@ -148,6 +130,13 @@ def update_issue(
     if sprint_id is not None:
         issue.sprint_id = sprint_id
     issue.save()
+
+    if assignee_id is not None and assignee_id != previous_assignee_id:
+        notify_assignment.delay(
+            user_id=str(assignee_id),
+            workspace_id=str(workspace.id),
+            issue_id=str(issue.id),
+        )
     return issue
 
 

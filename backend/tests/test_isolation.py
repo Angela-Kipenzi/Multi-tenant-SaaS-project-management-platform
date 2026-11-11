@@ -294,3 +294,38 @@ def test_missing_workspace_header_returns_404_for_scoped_endpoint(api_client, ow
     api_client.force_authenticate(owner.user)
     r = api_client.get(f"/api/v1/workspaces/{owner.workspace.id}/")
     assert r.status_code in (200, 404)
+
+
+# --------------------------------------------------------------------------- # 
+# comment tests
+# --------------------------------------------------------------------------- #
+def test_comment_list_foreign_issue_returns_404(api_client, owner):
+    other = OwnerMembershipFactory()
+    other_project = ProjectFactory(workspace=other.workspace)
+    other_board = BoardFactory(workspace=other.workspace, project=other_project)
+    other_column = ColumnFactory(workspace=other.workspace, board=other_board)
+    other_issue = IssueFactory(
+        workspace=other.workspace, board=other_board, column=other_column
+    )
+    client = _client_with_token(api_client, owner)
+    r = client.get(
+        f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/comments/"
+    )
+    assert r.status_code == 404
+
+
+def test_comment_create_foreign_issue_returns_404(api_client, owner):
+    other = OwnerMembershipFactory()
+    other_project = ProjectFactory(workspace=other.workspace)
+    other_board = BoardFactory(workspace=other.workspace, project=other_project)
+    other_column = ColumnFactory(workspace=other.workspace, board=other_board)
+    other_issue = IssueFactory(
+        workspace=other.workspace, board=other_board, column=other_column
+    )
+    client = _client_with_token(api_client, owner)
+    r = client.post(
+        f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/comments/",
+        {"body": "hax"},
+        format="json",
+    )
+    assert r.status_code == 404

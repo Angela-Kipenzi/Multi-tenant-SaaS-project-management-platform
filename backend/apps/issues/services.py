@@ -8,7 +8,7 @@ from apps.boards.models import Board, Column
 from apps.projects.models import Project
 from common.exceptions import Forbidden, NotFound
 
-from .models import Issue, Sprint
+from .models import Issue, Sprint, Comment
 from .sequence import next_issue_number
 
 from datetime import datetime
@@ -272,3 +272,38 @@ def close_sprint(*, actor_membership: WorkspaceMembership, sprint_id) -> Sprint:
     sprint.is_active = False
     sprint.save(update_fields=["is_active", "updated_at"])
     return sprint
+
+def create_comment(
+    *, actor_membership: WorkspaceMembership, issue_id, body: str,
+) -> Comment:
+    if not has_capability(actor_membership.role, "comment.create"):
+        raise Forbidden("Role cannot comment.")
+
+    workspace = actor_membership.workspace
+    issue = Issue.objects.filter(workspace=workspace, id=issue_id).first()
+    if not issue:
+        raise NotFound("Issue not found.")
+
+    return Comment.objects.create(
+        workspace=workspace,
+        issue=issue,
+        author=actor_membership.user,
+        body=body,
+    )
+
+
+def delete_comment(
+    *, actor_membership: WorkspaceMembership, comment_id,
+) -> None:
+    workspace = actor_membership.workspace
+    comment = Comment.objects.filter(workspace=workspace, id=comment_id).first()
+    if not comment:
+        raise NotFound("Comment not found.")
+
+    # Only the author or an admin/owner can delete.
+    is_author = comment.author_id == actor_membership.user_id
+    can_delete_any = has_capability(actor_membership.role, "issue.delete")
+    if not (is_author or can_delete_any):
+        raise Forbidden("Role cannot delete this comment.")
+
+    comment.soft_delete()

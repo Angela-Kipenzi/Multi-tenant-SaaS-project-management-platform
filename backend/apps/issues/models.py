@@ -117,3 +117,26 @@ class Issue(TenantModel, SoftDeleteModel):
 
     def __str__(self) -> str:
         return f"{self.key}: {self.title}"
+
+class Comment(TenantModel, SoftDeleteModel):
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name="comments")
+    workspace = models.ForeignKey(
+        "tenants.Workspace", on_delete=models.CASCADE, related_name="comments"
+    )
+    author = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True,
+        related_name="comments",
+    )
+    body = models.TextField(max_length=10000)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(
+                fields=["workspace", "issue", "created_at"],
+                name="idx_comment_ws_issue",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Comment by {self.author_id} on {self.issue_id}"

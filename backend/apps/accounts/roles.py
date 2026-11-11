@@ -33,6 +33,7 @@ CAPABILITIES: dict[str, set[str]] = {
     "issue.update_own":          {Role.OWNER, Role.ADMIN, Role.MEMBER},
     "issue.delete":              {Role.OWNER, Role.ADMIN},
     "comment.create":            {Role.OWNER, Role.ADMIN, Role.MEMBER},
+    "comment.delete":            {Role.OWNER, Role.ADMIN, Role.MEMBER},
     "billing.manage":            {Role.OWNER},
 }
 
@@ -43,3 +44,4 @@ def has_capability(role: str, capability: str) -> bool:
 
 def rank(role: str) -> int:
     return ROLE_RANK.get(role, 0)
+

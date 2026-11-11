@@ -13,6 +13,7 @@ from .models import Issue
 from .serializers import (
     IssueCreateSerializer, IssueSerializer, IssueUpdateSerializer, IssueMoveSerializer, SprintSerializer
 )
+from .serializers import CommentCreateSerializer, CommentSerializer
 
 
 
@@ -98,3 +99,45 @@ class SprintCloseView(APIView):
             actor_membership=request.membership, sprint_id=sprint_id
         )
         return Response(SprintSerializer(sprint).data)
+
+
+class CommentListCreateView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def get(self, request, workspace_id, issue_id):
+        # Verify issue belongs to workspace, then list comments.
+        issue = Issue.objects.filter(
+            workspace=request.workspace, id=issue_id
+        ).first()
+        if not issue:
+            raise NotFound("Issue not found.")
+
+        comments = (
+            issue.comments
+            .select_related("author")
+            .order_by("created_at")
+        )
+        return Response(CommentSerializer(comments, many=True).data)
+
+    def post(self, request, workspace_id, issue_id):
+        ser = CommentCreateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        comment = services.create_comment(
+            actor_membership=request.membership,
+            issue_id=issue_id,
+            body=ser.validated_data["body"],
+        )
+        return Response(
+            CommentSerializer(comment).data, status=status.HTTP_201_CREATED
+        )
+
+
+class CommentDeleteView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def delete(self, request, workspace_id, comment_id):
+        services.delete_comment(
+            actor_membership=request.membership, comment_id=comment_id
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+

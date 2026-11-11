@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from .models import Issue, Sprint
+from .models import Comment, Issue, Sprint
 
 
 class SprintSerializer(serializers.ModelSerializer):
@@ -51,3 +51,15 @@ class IssueMoveSerializer(serializers.Serializer):
     column_id = serializers.UUIDField()
     order = serializers.IntegerField(min_value=0)
     expected_updated_at = serializers.DateTimeField()
+
+class CommentSerializer(serializers.ModelSerializer):
+    author_email = serializers.EmailField(source="author.email", read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ("id", "issue", "author", "author_email", "body", "created_at")
+        read_only_fields = ("id", "issue", "author", "created_at")
+
+
+class CommentCreateSerializer(serializers.Serializer):
+    body = serializers.CharField(min_length=1, max_length=10000)

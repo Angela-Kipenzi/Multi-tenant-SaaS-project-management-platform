@@ -9,11 +9,17 @@ from apps.tenants.models import Plan, Workspace
 class UserFactory(DjangoModelFactory):
     class Meta:
         model = User
+        skip_postgeneration_save = True
 
     email = factory.Sequence(lambda n: f"user{n}@example.com")
-    password = factory.PostGenerationMethodCall("set_password", "correct-horse-battery")
 
-
+    @factory.post_generation
+    def password(self, create, extracted, **kwargs):
+        if not create:
+            return
+        self.set_password(extracted or "correct-horse-battery")
+        self.save()
+        
 class WorkspaceFactory(DjangoModelFactory):
     class Meta:
         model = Workspace

@@ -17,7 +17,7 @@ from apps.projects.models import Project
 from tests.factories.accounts import OwnerMembershipFactory, WorkspaceFactory
 from tests.factories.boards import BoardFactory, ColumnFactory
 from tests.factories.projects import ProjectFactory
-
+from tests.factories.issues import IssueFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -202,6 +202,38 @@ def test_issue_create_foreign_board_returns_404(api_client, owner):
     )
     assert r.status_code == 404
 
+
+def test_issue_detail_foreign_returns_404(api_client, owner):
+    other = OwnerMembershipFactory()
+    other_project = ProjectFactory(workspace=other.workspace)
+    other_board = BoardFactory(workspace=other.workspace, project=other_project)
+    other_column = ColumnFactory(workspace=other.workspace, board=other_board)
+    other_issue = IssueFactory(
+        workspace=other.workspace, board=other_board, column=other_column
+    )
+    client = _client_with_token(api_client, owner)
+    r = client.get(
+        f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/"
+    )
+    assert r.status_code == 404
+
+
+def test_issue_move_foreign_returns_404(api_client, owner):
+    other = OwnerMembershipFactory()
+    other_project = ProjectFactory(workspace=other.workspace)
+    other_board = BoardFactory(workspace=other.workspace, project=other_project)
+    other_column = ColumnFactory(workspace=other.workspace, board=other_board)
+    other_issue = IssueFactory(
+        workspace=other.workspace, board=other_board, column=other_column
+    )
+    client = _client_with_token(api_client, owner)
+    r = client.post(
+        f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/move/",
+        {"column_id": str(other_column.id), "order": 0,
+         "expected_updated_at": other_issue.updated_at.isoformat()},
+        format="json",
+    )
+    assert r.status_code == 404
 
 # --------------------------------------------------------------------------- #
 # Plan limits

@@ -38,3 +38,16 @@ class IssueCreateSerializer(serializers.Serializer):
     priority = serializers.ChoiceField(choices=Issue.Priority.choices, default=Issue.Priority.MEDIUM)
     sprint_id = serializers.UUIDField(required=False, allow_null=True)
     assignee_id = serializers.UUIDField(required=False, allow_null=True)
+
+class IssueUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=200, min_length=3, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    priority = serializers.ChoiceField(choices=Issue.Priority.choices, required=False)
+    assignee_id = serializers.UUIDField(required=False, allow_null=True)
+    sprint_id = serializers.UUIDField(required=False, allow_null=True)
+
+
+class IssueMoveSerializer(serializers.Serializer):
+    column_id = serializers.UUIDField()
+    order = serializers.IntegerField(min_value=0)
+    expected_updated_at = serializers.DateTimeField()

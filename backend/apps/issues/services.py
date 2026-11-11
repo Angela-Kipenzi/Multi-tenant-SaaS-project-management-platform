@@ -11,6 +11,12 @@ from common.exceptions import Forbidden, NotFound
 from .models import Issue, Sprint
 from .sequence import next_issue_number
 
+from datetime import datetime
+from django.db import transaction
+from django.utils import timezone
+from common.exceptions import Conflict, Forbidden, NotFound
+from django.db import models
+
 
 def create_sprint(
     *, actor_membership: WorkspaceMembership, project_id, name: str,
@@ -98,3 +104,171 @@ def create_issue(
         priority=priority,
         order=max_order,
     )
+
+def update_issue(
+    *, actor_membership: WorkspaceMembership, issue_id,
+    title: str | None = None, description: str | None = None,
+    priority: str | None = None, assignee_id=None, sprint_id=None,
+) -> Issue:
+    workspace = actor_membership.workspace
+    issue = Issue.objects.filter(workspace=workspace, id=issue_id).first()
+    if not issue:
+        raise NotFound("Issue not found.")
+
+    # Field-level permission: only assignee can update own; admins can update any.
+    is_assignee = issue.assignee_id == actor_membership.user_id
+    can_update_any = has_capability(actor_membership.role, "issue.update_any")
+    if not (can_update_any or is_assignee):
+        raise Forbidden("Role cannot update this issue.")
+
+    # Assigning to someone else requires admin-level permission.
+    if assignee_id is not None and not can_update_any:
+        raise Forbidden("Only admins can reassign issues.")
+
+    if assignee_id is not None:
+        # Validate assignee is a member of this workspace.
+        from apps.accounts.models import WorkspaceMembership as WM
+        if not WM.objects.filter(workspace=workspace, user_id=assignee_id).exists():
+            raise NotFound("Assignee not found.")
+
+    if sprint_id is not None:
+        if not Sprint.objects.filter(
+            workspace=workspace, project_id=issue.project_id, id=sprint_id
+        ).exists():
+            raise NotFound("Sprint not found on this project.")
+
+    if title is not None:
+        issue.title = title
+    if description is not None:
+        issue.description = description
+    if priority is not None:
+        issue.priority = priority
+    if assignee_id is not None:
+        issue.assignee_id = assignee_id
+    if sprint_id is not None:
+        issue.sprint_id = sprint_id
+    issue.save()
+    return issue
+
+
+def move_issue(
+    *, actor_membership: WorkspaceMembership, issue_id,
+    column_id, order: int, expected_updated_at: datetime,
+) -> Issue:
+    workspace = actor_membership.workspace
+
+    with transaction.atomic():
+        # Lock the row to serialize concurrent moves of the same issue.
+        issue = (
+            Issue.objects.select_for_update()
+            .filter(workspace=workspace, id=issue_id)
+            .first()
+        )
+        if not issue:
+            raise NotFound("Issue not found.")
+
+        if not has_capability(actor_membership.role, "issue.update_any") and \
+           issue.assignee_id != actor_membership.user_id:
+            raise Forbidden("Role cannot move this issue.")
+
+        # Optimistic concurrency: client's expected_updated_at must match
+        # current, else another user moved it since they loaded.
+        if issue.updated_at != expected_updated_at:
+            raise Conflict(
+                "Issue was modified by another user.",
+                code="stale_write",
+            )
+
+        target_column = (
+            Column.objects.filter(workspace=workspace, id=column_id)
+            .select_related("board")
+            .first()
+        )
+        if not target_column:
+            raise NotFound("Column not found.")
+        if target_column.board_id != issue.board_id:
+            raise Conflict(
+                "Target column is on a different board.",
+                code="wrong_board",
+            )
+
+        source_column_id = issue.column_id
+        source_order = issue.order
+        target_order = max(0, min(order, _column_max_order(workspace, target_column.id)))
+
+        if source_column_id == target_column.id:
+            # Reorder within the same column.
+            _shift_within_column(workspace, source_column_id, source_order, target_order)
+        else:
+            # Move across columns: compact source, insert into target.
+            _shift_source_column(workspace, source_column_id, source_order)
+            _shift_target_column(workspace, target_column.id, target_order)
+
+        issue.column = target_column
+        issue.order = target_order
+        # Sync status to semantic state — a column called "Done" doesn't
+        # automatically mean status="done" unless it maps to a status.
+        # For now, leave status alone; Phase D.5 adds a status-column mapping.
+        issue.save()
+        return issue
+
+
+def _column_max_order(workspace, column_id) -> int:
+    return (
+        Issue.objects
+        .filter(workspace=workspace, column_id=column_id)
+        .count()
+    )
+
+
+def _shift_within_column(workspace, column_id, old_order: int, new_order: int) -> None:
+    if old_order == new_order:
+        return
+    if old_order < new_order:
+        Issue.objects.filter(
+            workspace=workspace, column_id=column_id,
+            order__gt=old_order, order__lte=new_order,
+        ).update(order=models.F("order") - 1)
+    else:
+        Issue.objects.filter(
+            workspace=workspace, column_id=column_id,
+            order__gte=new_order, order__lt=old_order,
+        ).update(order=models.F("order") + 1)
+
+
+def _shift_source_column(workspace, column_id, old_order: int) -> None:
+    Issue.objects.filter(
+        workspace=workspace, column_id=column_id, order__gt=old_order
+    ).update(order=models.F("order") - 1)
+
+
+def _shift_target_column(workspace, column_id, target_order: int) -> None:
+    Issue.objects.filter(
+        workspace=workspace, column_id=column_id, order__gte=target_order
+    ).update(order=models.F("order") + 1)
+
+
+@transaction.atomic
+def close_sprint(*, actor_membership: WorkspaceMembership, sprint_id) -> Sprint:
+    if not has_capability(actor_membership.role, "board.create"):
+        raise Forbidden("Role cannot close sprints.")
+
+    workspace = actor_membership.workspace
+    sprint = (
+        Sprint.objects.select_for_update()
+        .filter(workspace=workspace, id=sprint_id)
+        .first()
+    )
+    if not sprint:
+        raise NotFound("Sprint not found.")
+    if not sprint.is_active:
+        raise Conflict("Sprint is not active.", code="not_active")
+
+    # Return incomplete issues to the backlog (sprint=None).
+    Issue.objects.filter(
+        workspace=workspace, sprint=sprint, status__in=["todo", "in_progress", "review"]
+    ).update(sprint=None)
+
+    sprint.is_active = False
+    sprint.save(update_fields=["is_active", "updated_at"])
+    return sprint

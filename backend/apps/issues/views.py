@@ -10,7 +10,10 @@ from common.permissions import HasWorkspaceContext
 
 from . import services
 from .models import Issue
-from .serializers import IssueCreateSerializer, IssueSerializer
+from .serializers import (
+    IssueCreateSerializer, IssueSerializer, IssueUpdateSerializer, IssueMoveSerializer, SprintSerializer
+)
+
 
 
 def _get_own_board(request, board_id) -> Board:
@@ -49,3 +52,49 @@ class IssueListCreateView(APIView):
             **ser.validated_data,
         )
         return Response(IssueSerializer(issue).data, status=status.HTTP_201_CREATED)
+
+
+class IssueDetailView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def get(self, request, workspace_id, issue_id):
+        issue = Issue.objects.filter(
+            workspace=request.workspace, id=issue_id
+        ).select_related("assignee", "reporter", "sprint", "column").first()
+        if not issue:
+            raise NotFound("Issue not found.")
+        return Response(IssueSerializer(issue).data)
+
+    def patch(self, request, workspace_id, issue_id):
+        ser = IssueUpdateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        issue = services.update_issue(
+            actor_membership=request.membership,
+            issue_id=issue_id,
+            **ser.validated_data,
+        )
+        return Response(IssueSerializer(issue).data)
+
+
+class IssueMoveView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def post(self, request, workspace_id, issue_id):
+        ser = IssueMoveSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        issue = services.move_issue(
+            actor_membership=request.membership,
+            issue_id=issue_id,
+            **ser.validated_data,
+        )
+        return Response(IssueSerializer(issue).data)
+
+
+class SprintCloseView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def post(self, request, workspace_id, sprint_id):
+        sprint = services.close_sprint(
+            actor_membership=request.membership, sprint_id=sprint_id
+        )
+        return Response(SprintSerializer(sprint).data)

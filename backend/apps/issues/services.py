@@ -6,9 +6,9 @@ from apps.accounts.models import WorkspaceMembership
 from apps.accounts.roles import has_capability
 from apps.boards.models import Board, Column
 from apps.projects.models import Project
-from common.exceptions import Forbidden, NotFound
+from common.exceptions import Forbidden, NotFound, DomainError
 
-from .models import Issue, Sprint, Comment
+from .models import Issue, Sprint, Comment, Attachment
 from .sequence import next_issue_number
 
 from datetime import datetime
@@ -307,3 +307,58 @@ def delete_comment(
         raise Forbidden("Role cannot delete this comment.")
 
     comment.soft_delete()
+
+ATTACHMENT_ALLOWED_TYPES = {
+    "image/png", "image/jpeg", "image/gif", "image/webp",
+    "application/pdf",
+    "text/plain", "text/csv",
+}
+
+
+def create_attachment(
+    *, actor_membership: WorkspaceMembership, issue_id,
+    file_key: str, file_name: str, file_size: int, content_type: str,
+) -> Attachment:
+    if not has_capability(actor_membership.role, "comment.create"):
+        raise Forbidden("Role cannot attach files.")
+
+    if content_type not in ATTACHMENT_ALLOWED_TYPES:
+        raise DomainError(
+            f"Content type {content_type} not allowed.", code="bad_content_type"
+        )
+
+    workspace = actor_membership.workspace
+    issue = Issue.objects.filter(workspace=workspace, id=issue_id).first()
+    if not issue:
+        raise NotFound("Issue not found.")
+
+    # File key must be scoped under this workspace and issue — a client
+    # cannot register a key pointing at another workspace's object.
+    expected_prefix = f"{workspace.id}/{issue.id}/"
+    if not file_key.startswith(expected_prefix):
+        raise DomainError("Invalid file_key prefix.", code="bad_file_key")
+
+    return Attachment.objects.create(
+        workspace=workspace, issue=issue,
+        file_key=file_key, file_name=file_name,
+        file_size=file_size, content_type=content_type,
+        uploaded_by=actor_membership.user,
+    )
+
+
+def delete_attachment(
+    *, actor_membership: WorkspaceMembership, attachment_id,
+) -> None:
+    workspace = actor_membership.workspace
+    attachment = Attachment.objects.filter(
+        workspace=workspace, id=attachment_id
+    ).first()
+    if not attachment:
+        raise NotFound("Attachment not found.")
+
+    is_uploader = attachment.uploaded_by_id == actor_membership.user_id
+    can_delete_any = has_capability(actor_membership.role, "issue.delete")
+    if not (is_uploader or can_delete_any):
+        raise Forbidden("Role cannot delete this attachment.")
+
+    attachment.soft_delete()

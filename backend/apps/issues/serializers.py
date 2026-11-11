@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from .models import Comment, Issue, Sprint
+from .models import Comment, Issue, Sprint, Attachment
 
 
 class SprintSerializer(serializers.ModelSerializer):
@@ -63,3 +63,19 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class CommentCreateSerializer(serializers.Serializer):
     body = serializers.CharField(min_length=1, max_length=10000)
+
+class AttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Attachment
+        fields = (
+            "id", "issue", "file_name", "file_size", "content_type",
+            "uploaded_by", "created_at",
+        )
+        read_only_fields = fields
+
+
+class AttachmentCreateSerializer(serializers.Serializer):
+    file_key = serializers.CharField(max_length=512)
+    file_name = serializers.CharField(max_length=255)
+    file_size = serializers.IntegerField(min_value=1, max_value=25 * 1024 * 1024)
+    content_type = serializers.CharField(max_length=100)

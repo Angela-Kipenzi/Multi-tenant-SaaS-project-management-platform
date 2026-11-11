@@ -11,9 +11,10 @@ from common.permissions import HasWorkspaceContext
 from . import services
 from .models import Issue
 from .serializers import (
-    IssueCreateSerializer, IssueSerializer, IssueUpdateSerializer, IssueMoveSerializer, SprintSerializer
+     IssueCreateSerializer, IssueSerializer, IssueUpdateSerializer, IssueMoveSerializer, SprintSerializer
 )
 from .serializers import CommentCreateSerializer, CommentSerializer
+from .serializers import AttachmentCreateSerializer, AttachmentSerializer
 
 
 
@@ -138,6 +139,41 @@ class CommentDeleteView(APIView):
     def delete(self, request, workspace_id, comment_id):
         services.delete_comment(
             actor_membership=request.membership, comment_id=comment_id
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class AttachmentListCreateView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def get(self, request, workspace_id, issue_id):
+        issue = Issue.objects.filter(
+            workspace=request.workspace, id=issue_id
+        ).first()
+        if not issue:
+            raise NotFound("Issue not found.")
+        attachments = issue.attachments.all()
+        return Response(AttachmentSerializer(attachments, many=True).data)
+
+    def post(self, request, workspace_id, issue_id):
+        ser = AttachmentCreateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        attachment = services.create_attachment(
+            actor_membership=request.membership,
+            issue_id=issue_id,
+            **ser.validated_data,
+        )
+        return Response(
+            AttachmentSerializer(attachment).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AttachmentDeleteView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def delete(self, request, workspace_id, attachment_id):
+        services.delete_attachment(
+            actor_membership=request.membership, attachment_id=attachment_id
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
 

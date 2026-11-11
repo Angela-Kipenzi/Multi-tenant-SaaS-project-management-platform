@@ -329,3 +329,37 @@ def test_comment_create_foreign_issue_returns_404(api_client, owner):
         format="json",
     )
     assert r.status_code == 404
+
+    # --------------------------------------------------------------------------- #
+    #attachment tests
+    # --------------------------------------------------------------------------- #
+    def test_attachment_list_foreign_issue_returns_404(api_client, owner):
+        other = OwnerMembershipFactory()
+        other_project = ProjectFactory(workspace=other.workspace)
+        other_board = BoardFactory(workspace=other.workspace, project=other_project)
+        other_column = ColumnFactory(workspace=other.workspace, board=other_board)
+        other_issue = IssueFactory(
+            workspace=other.workspace, board=other_board, column=other_column
+        )
+        client = _client_with_token(api_client, owner)
+        r = client.get(
+            f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/attachments/"
+        )
+        assert r.status_code == 404
+
+def test_attachment_create_foreign_issue_returns_404(api_client, owner):
+    other = OwnerMembershipFactory()
+    other_project = ProjectFactory(workspace=other.workspace)
+    other_board = BoardFactory(workspace=other.workspace, project=other_project)
+    other_column = ColumnFactory(workspace=other.workspace, board=other_board)
+    other_issue = IssueFactory(
+        workspace=other.workspace, board=other_board, column=other_column
+    )
+    client = _client_with_token(api_client, owner)
+    r = client.post(
+        f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/attachments/",
+        {"file_key": "abc.png", "file_name": "abc.png", "file_size": 1024, "content_type": "image/png"},
+        format="json",
+    )
+    assert r.status_code == 404
+    

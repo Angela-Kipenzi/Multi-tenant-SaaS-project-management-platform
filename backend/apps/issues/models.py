@@ -140,3 +140,30 @@ class Comment(TenantModel, SoftDeleteModel):
 
     def __str__(self) -> str:
         return f"Comment by {self.author_id} on {self.issue_id}"
+
+class Attachment(TenantModel, SoftDeleteModel):
+    issue = models.ForeignKey(
+        Issue, on_delete=models.CASCADE, related_name="attachments"
+    )
+    workspace = models.ForeignKey(
+        "tenants.Workspace", on_delete=models.CASCADE, related_name="attachments"
+    )
+    file_key = models.CharField(max_length=512)         # S3 key, e.g. "ws/…/uuid.pdf"
+    file_name = models.CharField(max_length=255)         # original filename
+    file_size = models.PositiveBigIntegerField()
+    content_type = models.CharField(max_length=100)
+    uploaded_by = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True,
+        related_name="attachments",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["workspace", "issue"], name="idx_attachment_ws_issue"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.file_name

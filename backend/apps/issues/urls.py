@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import AttachmentListCreateView, AttachmentDeleteView, CommentListCreateView, CommentDeleteView, IssueListCreateView, IssueDetailView, IssueMoveView, SprintCloseView
+from .views import AttachmentListCreateView, AttachmentDeleteView, CommentListCreateView, CommentDeleteView, IssueHistoryView, IssueListCreateView, IssueDetailView, IssueMoveView, SprintCloseView
 
 urlpatterns = [
     path(
@@ -35,4 +35,8 @@ urlpatterns = [
     "workspaces/<uuid:workspace_id>/attachments/<uuid:attachment_id>/",
     AttachmentDeleteView.as_view(),
     ),
+    path(
+    "workspaces/<uuid:workspace_id>/issues/<uuid:issue_id>/history/",
+    IssueHistoryView.as_view(),
+),
 ]

@@ -98,3 +98,15 @@ def test_close_sprint_moves_incomplete_to_backlog(owner):
     open_issue.refresh_from_db()
     assert done_issue.sprint_id == sprint.id        # done stays
     assert open_issue.sprint_id is None             # incomplete → backlog
+
+def test_issue_history_records_update(owner):
+    _, board, column, _ = _setup_board(owner)
+    issue = IssueFactory(workspace=owner.workspace, board=board, column=column)
+
+    services.update_issue(
+        actor_membership=owner, issue_id=issue.id, title="Renamed"
+    )
+
+    history = issue.history.all().order_by("history_date")
+    assert history.count() == 2   # create + update
+    assert history.last().title == "Renamed"

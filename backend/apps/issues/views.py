@@ -177,3 +177,29 @@ class AttachmentDeleteView(APIView):
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class IssueHistoryView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def get(self, request, workspace_id, issue_id):
+        issue = Issue.objects.filter(
+            workspace=request.workspace, id=issue_id
+        ).first()
+        if not issue:
+            raise NotFound("Issue not found.")
+
+        history = issue.history.select_related("history_user").order_by("-history_date")[:100]
+        data = [
+            {
+                "history_id": h.history_id,
+                "history_date": h.history_date,
+                "history_user": h.history_user.email if h.history_user else None,
+                "history_type": h.history_type,   # "+", "~", "-"
+                "title": h.title,
+                "status": h.status,
+                "priority": h.priority,
+                "assignee_id": str(h.assignee_id) if h.assignee_id else None,
+                "column_id": str(h.column_id),
+            }
+            for h in history
+        ]
+        return Response(data)

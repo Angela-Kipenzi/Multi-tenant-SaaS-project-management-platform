@@ -6,6 +6,7 @@ import {
   updateIssue,
 } from "@/services/issues";
 import type { Issue } from "@/types/api";
+import { toast } from "@/lib/toast";
 
 export const issueKeys = {
   forBoard: (boardId: string) => ["issues", boardId] as const,
@@ -60,13 +61,19 @@ export const useMoveIssue = (boardId: string) => {
       }
       return { previous };
     },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) {
-        qc.setQueryData(issueKeys.forBoard(boardId), ctx.previous);
-      }
-    },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: issueKeys.forBoard(boardId) });
+    },
+    onError: (err: any, _vars, ctx) => {
+        if (ctx?.previous) {
+            qc.setQueryData(issueKeys.forBoard(boardId), ctx.previous);
+        }
+        const status = err?.response?.status;
+        if (status === 409) {
+            toast("Someone else moved this issue first. Refreshed.", "error");
+        } else {
+            toast("Couldn't move issue. Try again.", "error");
+        }
     },
   });
 };

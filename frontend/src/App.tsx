@@ -8,6 +8,8 @@ import { refresh } from "@/services/auth";
 import { useAuthStore } from "@/store/authStore";
 import { ProjectsPage } from "@/features/projects/ProjectsPage";
 import { BoardPage } from "@/features/boards/BoardPage";
+import { BillingPage } from "@/features/billing/BillingPage"
+import { NotFound } from "./pages/NotFound";
 
 const App = () => {
   const { user, initialized, setAuth, clearAuth, setInitialized } = useAuthStore();
@@ -53,7 +55,8 @@ const App = () => {
         <Route element={<RequireWorkspace />}>
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/:projectId/boards" element={<BoardPage />} />
-          <Route path="/billing" element={<div>Billing (Phase G.3)</div>} />
+          <Route path="/billing" element={<BillingPage />} />
+          <Route path="*" element={<NotFound />} /> 
         </Route>
       </Route>
 

@@ -6,6 +6,8 @@ import { LoginPage } from "@/features/auth/LoginPage";
 import { WorkspaceSelector } from "@/features/workspace/WorkspaceSelector";
 import { refresh } from "@/services/auth";
 import { useAuthStore } from "@/store/authStore";
+import { ProjectsPage } from "@/features/projects/ProjectsPage";
+import { BoardPage } from "@/features/boards/BoardPage";
 
 const App = () => {
   const { user, initialized, setAuth, clearAuth, setInitialized } = useAuthStore();
@@ -49,8 +51,8 @@ const App = () => {
       <Route element={<ProtectedRoute />}>
         <Route path="/select-workspace" element={<WorkspaceSelector />} />
         <Route element={<RequireWorkspace />}>
-          <Route path="/projects" element={<div>Projects (Phase G.2)</div>} />
-          <Route path="/projects/:projectId/boards/:boardId" element={<div>Board (Phase G.2)</div>} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/projects/:projectId/boards" element={<BoardPage />} />
           <Route path="/billing" element={<div>Billing (Phase G.3)</div>} />
         </Route>
       </Route>

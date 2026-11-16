@@ -6,7 +6,8 @@ import { Button } from "@/components/Button";
 import { KanbanBoard } from "@/features/kanban/KanbanBoard";
 import { CreateIssueModal } from "@/features/kanban/CreateIssueModal";
 import { useBoards } from "./useBoards";
-import type { Board, Issue } from "@/types/api";
+import type { Board } from "@/types/api";
+import { IssueDetailModal } from "@/features/kanban/IssueDetailModal";
 
 export const BoardPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -15,6 +16,7 @@ export const BoardPage = () => {
   const [createColumnId, setCreateColumnId] = useState<string | null>(null);
 
   const board = activeBoard ?? boards?.[0] ?? null;
+  const [detailIssueId, setDetailIssueId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -78,17 +80,20 @@ export const BoardPage = () => {
       {board && (
         <>
           <KanbanBoard
-            board={board}
-            onIssueClick={(_issue: Issue) => {
-              // Phase G.3 adds the detail/edit modal.
-            }}
-            onAddIssue={(columnId) => setCreateColumnId(columnId)}
-          />
+           board={board}
+           onIssueClick={(issue) => setDetailIssueId(issue.id)}
+           onAddIssue={(columnId) => setCreateColumnId(columnId)}
+           />
           <CreateIssueModal
             open={!!createColumnId}
             onClose={() => setCreateColumnId(null)}
             boardId={board.id}
             columnId={createColumnId}
+          />
+          <IssueDetailModal
+          issueId={detailIssueId}
+          boardId={board.id}
+          onClose={() => setDetailIssueId(null)}
           />
         </>
       )}

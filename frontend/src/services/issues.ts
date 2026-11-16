@@ -29,6 +29,12 @@ export const createIssue = async (args: {
   return r.data;
 };
 
+export const getIssue = async (issueId: string): Promise<Issue> => {
+  const wsId = getCurrentWorkspaceId();
+  const r = await api.get<Issue>(`/workspaces/${wsId}/issues/${issueId}/`);
+  return r.data;
+};
+
 export const moveIssue = async (args: {
   issueId: string;
   columnId: string;
@@ -52,11 +58,23 @@ export const updateIssue = async (args: {
   title?: string;
   description?: string;
   priority?: IssuePriority;
+  assigneeId?: string | null;
 }): Promise<Issue> => {
   const wsId = getCurrentWorkspaceId();
+  const payload: Record<string, unknown> = {};
+  if (args.title !== undefined) payload.title = args.title;
+  if (args.description !== undefined) payload.description = args.description;
+  if (args.priority !== undefined) payload.priority = args.priority;
+  if (args.assigneeId !== undefined) payload.assignee_id = args.assigneeId;
+
   const r = await api.patch<Issue>(
     `/workspaces/${wsId}/issues/${args.issueId}/`,
-    args
+    payload
   );
   return r.data;
+};
+
+export const deleteIssue = async (issueId: string): Promise<void> => {
+  const wsId = getCurrentWorkspaceId();
+  await api.delete(`/workspaces/${wsId}/issues/${issueId}/`);
 };

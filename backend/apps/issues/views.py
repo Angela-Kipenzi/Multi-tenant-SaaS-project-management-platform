@@ -9,12 +9,16 @@ from common.exceptions import NotFound
 from common.permissions import HasWorkspaceContext
 
 from . import services
-from .models import Issue
+from .models import Issue, Sprint
 from .serializers import (
      IssueCreateSerializer, IssueSerializer, IssueUpdateSerializer, IssueMoveSerializer, SprintSerializer
 )
 from .serializers import CommentCreateSerializer, CommentSerializer
 from .serializers import AttachmentCreateSerializer, AttachmentSerializer
+
+from apps.projects.models import Project
+from .serializers import SprintCreateSerializer, SprintSerializer
+
 
 
 
@@ -203,3 +207,59 @@ class IssueHistoryView(APIView):
             for h in history
         ]
         return Response(data)
+
+
+def _get_own_project(request, project_id) -> Project:
+    project = Project.objects.filter(
+        workspace=request.workspace, id=project_id
+    ).first()
+    if not project:
+        raise NotFound("Project not found.")
+    return project
+
+
+class SprintListCreateView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def get(self, request, workspace_id, project_id):
+        _get_own_project(request, project_id)
+        sprints = (
+            Sprint.objects
+            .filter(workspace=request.workspace, project_id=project_id)
+            .order_by("-created_at")
+        )
+        return Response(SprintSerializer(sprints, many=True).data)
+
+    def post(self, request, workspace_id, project_id):
+        _get_own_project(request, project_id)
+        ser = SprintCreateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        sprint = services.create_sprint(
+            actor_membership=request.membership,
+            project_id=project_id,
+            **ser.validated_data,
+        )
+        return Response(
+            SprintSerializer(sprint).data, status=status.HTTP_201_CREATED
+        )
+
+
+class SprintActivateView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def post(self, request, workspace_id, sprint_id):
+        # Service already filters by workspace, so cross-tenant is 404.
+        sprint = services.activate_sprint(
+            actor_membership=request.membership, sprint_id=sprint_id
+        )
+        return Response(SprintSerializer(sprint).data)
+
+
+class SprintCloseView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def post(self, request, workspace_id, sprint_id):
+        sprint = services.close_sprint(
+            actor_membership=request.membership, sprint_id=sprint_id
+        )
+        return Response(SprintSerializer(sprint).data)

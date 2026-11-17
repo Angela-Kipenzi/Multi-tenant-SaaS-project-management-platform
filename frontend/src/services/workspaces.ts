@@ -18,3 +18,22 @@ export const listMembers = async (): Promise<Member[]> => {
   const r = await api.get<Member[]>(`/workspaces/${wsId}/members/`);
   return r.data;
 };
+export interface CreateWorkspaceResponse {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const createWorkspace = async (
+  name: string,
+  slug: string
+): Promise<CreateWorkspaceResponse> => {
+  const r = await api.post<CreateWorkspaceResponse>("/workspaces/", {
+    name,
+    slug,
+  });
+  return r.data;
+};

@@ -8,6 +8,7 @@ import { CreateIssueModal } from "@/features/kanban/CreateIssueModal";
 import { useBoards } from "./useBoards";
 import type { Board } from "@/types/api";
 import { IssueDetailModal } from "@/features/kanban/IssueDetailModal";
+import { SprintsPanel } from "../sprints/SprintsPanel";
 
 export const BoardPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -79,6 +80,7 @@ export const BoardPage = () => {
 
       {board && (
         <>
+        {projectId && <SprintsPanel projectId={projectId} />}
           <KanbanBoard
            board={board}
            onIssueClick={(issue) => setDetailIssueId(issue.id)}

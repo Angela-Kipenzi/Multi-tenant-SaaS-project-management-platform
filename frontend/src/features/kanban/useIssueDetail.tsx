@@ -28,6 +28,7 @@ export const useUpdateIssue = (boardId: string) => {
   });
 };
 
+
 export const useDeleteIssue = (boardId: string) => {
   const qc = useQueryClient();
   return useMutation({
@@ -35,8 +36,14 @@ export const useDeleteIssue = (boardId: string) => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: issueKeys.forBoard(boardId) });
     },
-    onError: () => {
-      toast("Couldn't delete issue.", "error");
+    onError: (err: any) => {
+      const status = err?.response?.status;
+      toast(
+        status === 403
+          ? "You don't have permission to delete this issue."
+          : "Couldn't delete issue.",
+        "error"
+      );
     },
   });
 };

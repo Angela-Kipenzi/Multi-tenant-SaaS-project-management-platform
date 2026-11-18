@@ -78,3 +78,21 @@ export const deleteIssue = async (issueId: string): Promise<void> => {
   const wsId = getCurrentWorkspaceId();
   await api.delete(`/workspaces/${wsId}/issues/${issueId}/`);
 };
+
+export const searchIssues = async (args: {
+  boardId?: string;
+  query: string;
+  priority?: string;
+  assignee?: string;
+}): Promise<Issue[]> => {
+  const wsId = getCurrentWorkspaceId();
+  const params = new URLSearchParams();
+  if (args.query) params.set("search", args.query);
+  if (args.priority) params.set("priority", args.priority);
+  if (args.assignee) params.set("assignee", args.assignee);
+  const path = args.boardId
+    ? `/workspaces/${wsId}/boards/${args.boardId}/issues/`
+    : `/workspaces/${wsId}/issues/search/`;
+  const r = await api.get<Issue[]>(`${path}?${params.toString()}`);
+  return r.data;
+};

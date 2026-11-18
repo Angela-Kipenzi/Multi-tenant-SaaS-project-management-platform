@@ -5,13 +5,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.projects.models import Project
-from common.exceptions import NotFound
+from common.exceptions import Conflict, NotFound, Forbidden, DomainError
 from common.permissions import HasWorkspaceContext
+from apps.accounts.roles import has_capability
 
 from . import services
 from .models import Board
 from .serializers import (
-    BoardCreateSerializer, BoardSerializer, ColumnReorderSerializer,
+    BoardCreateSerializer, BoardSerializer, BoardUpdateSerializer, ColumnReorderSerializer,
 )
 
 
@@ -46,6 +47,49 @@ class BoardListCreateView(APIView):
             **ser.validated_data,
         )
         return Response(BoardSerializer(board).data, status=status.HTTP_201_CREATED)
+
+class BoardDetailView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def get(self, request, workspace_id, board_id):
+        board = Board.objects.filter(
+            workspace=request.workspace, id=board_id
+        ).prefetch_related("columns").first()
+        if not board:
+            raise NotFound("Board not found.")
+        return Response(BoardSerializer(board).data)
+
+    def patch(self, request, workspace_id, board_id):
+        if not has_capability(request.membership.role, "board.create"):
+            raise Forbidden("Role cannot edit boards.")
+
+        board = Board.objects.filter(
+            workspace=request.workspace, id=board_id
+        ).prefetch_related("columns").first()
+        if not board:
+            raise NotFound("Board not found.")
+
+        ser = BoardUpdateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        if "name" in ser.validated_data:
+            new_name = ser.validated_data["name"].strip()
+            if not new_name:
+                raise DomainError("Board name cannot be empty.")
+            if (
+                Board.objects
+                .filter(workspace=request.workspace, project=board.project, name__iexact=new_name)
+                .exclude(id=board.id)
+                .exists()
+            ):
+                raise Conflict(
+                    "A board with that name already exists in this project.",
+                    code="board_name_taken",
+                )
+            board.name = new_name
+            board.save()
+
+        return Response(BoardSerializer(board).data)
 
 
 class ColumnReorderView(APIView):

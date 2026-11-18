@@ -4,6 +4,7 @@ import {
   closeSprint,
   createSprint,
   listSprints,
+  deleteSprint,
 } from "@/services/sprints";
 import { toast } from "@/lib/toast";
 
@@ -51,5 +52,22 @@ export const useCloseSprint = (projectId: string) => {
       toast("Sprint closed. Incomplete issues returned to backlog.", "success");
     },
     onError: () => toast("Couldn't close sprint.", "error"),
+  });
+};
+
+export const useDeleteSprint = (projectId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteSprint,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: sprintKeys.forProject(projectId) });
+      toast("Sprint deleted.", "success");
+    },
+    onError: (err: any) => {
+      toast(
+        err?.response?.data?.detail ?? "Couldn't delete sprint.",
+        "error"
+      );
+    },
   });
 };

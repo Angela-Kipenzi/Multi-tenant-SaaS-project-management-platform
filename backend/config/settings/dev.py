@@ -15,3 +15,6 @@ MIDDLEWARE = MIDDLEWARE + [  # noqa: F405
 
 # Relax security in dev only
 SECURE_SSL_REDIRECT = False
+
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = False

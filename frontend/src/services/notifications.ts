@@ -4,6 +4,9 @@ export interface Notification {
   id: string;
   kind: string;
   issue: string | null;
+  issue_key: string | null;
+  actor_email: string | null;
+  actor_display_name: string | null;
   payload: Record<string, unknown>;
   read_at: string | null;
   created_at: string;

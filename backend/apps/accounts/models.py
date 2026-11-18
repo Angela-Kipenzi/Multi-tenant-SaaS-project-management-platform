@@ -29,7 +29,8 @@ class UserManager(BaseUserManager):
 
 class User(UUIDModel, AbstractUser):
     email = models.EmailField(unique=True)
-    username = None  # replaced by email
+    username = None
+    # AbstractUser already has first_name and last_name (max_length=150 each)
     active_workspace = models.ForeignKey(
         "tenants.Workspace",
         on_delete=models.SET_NULL,
@@ -39,11 +40,25 @@ class User(UUIDModel, AbstractUser):
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS: list[str] = []
-
     objects = UserManager()
 
     def __str__(self) -> str:
         return self.email
+
+    @property
+    def display_name(self) -> str:
+        full = f"{self.first_name} {self.last_name}".strip()
+        return full or self.email.split("@")[0]
+
+    @property
+    def initials(self) -> str:
+        first = (self.first_name or "").strip()
+        last = (self.last_name or "").strip()
+        if first and last:
+            return f"{first[0]}{last[0]}".upper()
+        if first:
+            return first[:2].upper()
+        return self.email[:2].upper()
 
 
 class WorkspaceMembership(UUIDModel, TimestampedModel):

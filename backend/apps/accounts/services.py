@@ -23,11 +23,16 @@ class InviteResult:
     invitation: Invitation | None
 
 
-def register_user(*, email: str, password: str) -> User:
+def register_user(
+    *, email: str, password: str,
+    first_name: str = "", last_name: str = "",
+) -> User:
     if User.objects.filter(email__iexact=email).exists():
         raise Conflict("An account with this email already exists.", code="email_taken")
-    return User.objects.create_user(email=email, password=password)
-
+    return User.objects.create_user(
+        email=email, password=password,
+        first_name=first_name, last_name=last_name,
+    )
 
 def create_workspace(*, creator: User, name: str, slug: str) -> Workspace:
     if Workspace.objects.filter(slug=slug).exists():

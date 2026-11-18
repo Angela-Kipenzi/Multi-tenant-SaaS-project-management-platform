@@ -110,3 +110,26 @@ def test_issue_history_records_update(owner):
     history = issue.history.all().order_by("history_date")
     assert history.count() == 2   # create + update
     assert history.last().title == "Renamed"
+
+def test_delete_issue_soft_deletes(owner):
+    project = ProjectFactory(workspace=owner.workspace)
+    board = BoardFactory(workspace=owner.workspace, project=project)
+    column = ColumnFactory(workspace=owner.workspace, board=board)
+    issue = IssueFactory(workspace=owner.workspace, board=board, column=column)
+
+    services.delete_issue(actor_membership=owner, issue_id=issue.id)
+
+    issue.refresh_from_db()
+    assert issue.deleted_at is not None
+
+
+def test_member_cannot_delete_issue(owner):
+    from common.exceptions import Forbidden
+    member = MembershipFactory(workspace=owner.workspace, role="member")
+    project = ProjectFactory(workspace=owner.workspace)
+    board = BoardFactory(workspace=owner.workspace, project=project)
+    column = ColumnFactory(workspace=owner.workspace, board=board)
+    issue = IssueFactory(workspace=owner.workspace, board=board, column=column)
+
+    with pytest.raises(Forbidden):
+        services.delete_issue(actor_membership=member, issue_id=issue.id)

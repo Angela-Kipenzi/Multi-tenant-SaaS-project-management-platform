@@ -25,6 +25,10 @@ class Sprint(TenantModel):
                 condition=models.Q(is_active=True),
                 name="uniq_active_sprint_per_project",
             ),
+            models.UniqueConstraint(
+                fields=["project", "name"],
+                  name="uniq_sprint_name_per_project",
+                  ),
         ]
         indexes = [
             models.Index(

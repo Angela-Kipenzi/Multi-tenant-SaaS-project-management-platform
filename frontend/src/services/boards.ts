@@ -20,3 +20,15 @@ export const createBoard = async (
   );
   return r.data;
 };
+
+export const updateBoard = async (
+  boardId: string,
+  name: string
+): Promise<Board> => {
+  const wsId = getCurrentWorkspaceId();
+  const r = await api.patch<Board>(
+    `/workspaces/${wsId}/boards/${boardId}/`,
+    { name }
+  );
+  return r.data;
+};

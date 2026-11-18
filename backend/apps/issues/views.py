@@ -1,10 +1,13 @@
 from __future__ import annotations
+from re import search
 
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from urllib3 import request
 
 from apps.boards.models import Board
+from apps.accounts import models
 from common.exceptions import NotFound
 from common.permissions import HasWorkspaceContext
 
@@ -38,17 +41,15 @@ class IssueListCreateView(APIView):
     permission_classes = [HasWorkspaceContext]
 
     def get(self, request, workspace_id, board_id):
-        board = _get_own_board(request, board_id)
+        _get_own_board(request, board_id)
         issues = (
-            Issue.objects.filter(workspace=request.workspace, board=board)
+            Issue.objects.filter(workspace=request.workspace, board=board_id)
             .select_related("assignee", "reporter", "sprint", "column")
             .order_by("column__order", "order", "created_at")
         )
         return Response(IssueSerializer(issues, many=True).data)
 
     def post(self, request, workspace_id, board_id):
-        # Service also re-checks board, but the pre-check here is 404-safe
-        # and keeps the failure consistent with GET.
         _get_own_board(request, board_id)
         ser = IssueCreateSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
@@ -58,7 +59,6 @@ class IssueListCreateView(APIView):
             **ser.validated_data,
         )
         return Response(IssueSerializer(issue).data, status=status.HTTP_201_CREATED)
-
 
 class IssueDetailView(APIView):
     permission_classes = [HasWorkspaceContext]
@@ -80,6 +80,12 @@ class IssueDetailView(APIView):
             **ser.validated_data,
         )
         return Response(IssueSerializer(issue).data)
+
+    def delete(self, request, workspace_id, issue_id):
+        services.delete_issue(
+            actor_membership=request.membership, issue_id=issue_id
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class IssueMoveView(APIView):
@@ -104,6 +110,15 @@ class SprintCloseView(APIView):
             actor_membership=request.membership, sprint_id=sprint_id
         )
         return Response(SprintSerializer(sprint).data)
+
+class SprintDeleteView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def delete(self, request, workspace_id, sprint_id):
+        services.delete_sprint(
+            actor_membership=request.membership, sprint_id=sprint_id
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CommentListCreateView(APIView):
@@ -263,3 +278,12 @@ class SprintCloseView(APIView):
             actor_membership=request.membership, sprint_id=sprint_id
         )
         return Response(SprintSerializer(sprint).data)
+
+class SprintDeleteView(APIView):
+    permission_classes = [HasWorkspaceContext]
+
+    def delete(self, request, workspace_id, sprint_id):
+        services.delete_sprint(
+            actor_membership=request.membership, sprint_id=sprint_id
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)

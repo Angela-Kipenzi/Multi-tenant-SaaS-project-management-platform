@@ -14,12 +14,14 @@ import type { Board, Issue } from "@/types/api";
 
 interface Props {
   board: Board;
+  issuesOverride?: Issue[];
   onIssueClick: (issue: Issue) => void;
   onAddIssue: (columnId: string) => void;
 }
 
-export const KanbanBoard = ({ board, onIssueClick, onAddIssue }: Props) => {
-  const { data: issues = [] } = useIssues(board.id);
+export const KanbanBoard = ({ board, issuesOverride, onIssueClick, onAddIssue }: Props) => {
+  const { data: fetchedIssues = [] } = useIssues(board.id);
+  const issues = issuesOverride ?? fetchedIssues;
   const moveMutation = useMoveIssue(board.id);
   const [activeId, setActiveId] = useState<string | null>(null);
 

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import AttachmentListCreateView, AttachmentDeleteView, CommentListCreateView, CommentDeleteView, IssueHistoryView, IssueListCreateView, IssueDetailView, IssueMoveView, SprintActivateView, SprintCloseView, SprintListCreateView
+from .views import AttachmentListCreateView, AttachmentDeleteView, CommentListCreateView, CommentDeleteView, IssueHistoryView, IssueListCreateView, IssueDetailView, IssueMoveView, SprintActivateView, SprintCloseView, SprintListCreateView, SprintDeleteView
 
 urlpatterns = [
     path(
@@ -51,4 +51,8 @@ urlpatterns = [
     "workspaces/<uuid:workspace_id>/sprints/<uuid:sprint_id>/close/",
     SprintCloseView.as_view(),
     ),
+    path(
+    "workspaces/<uuid:workspace_id>/sprints/<uuid:sprint_id>/",
+    SprintDeleteView.as_view(),
+),
 ]

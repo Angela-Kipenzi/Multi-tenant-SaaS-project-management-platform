@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createBoard, listBoards } from "@/services/boards";
+import { createBoard, listBoards, updateBoard } from "@/services/boards";
+import { toast } from "@/lib/toast";
 
 export const boardKeys = {
   forProject: (projectId: string) => ["boards", projectId] as const,
@@ -18,6 +19,21 @@ export const useCreateBoard = (projectId: string) => {
     mutationFn: (name: string) => createBoard(projectId, name),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: boardKeys.forProject(projectId) });
+    },
+  });
+};
+
+export const useUpdateBoard = (projectId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { boardId: string; name: string }) =>
+      updateBoard(args.boardId, args.name),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: boardKeys.forProject(projectId) });
+      toast("Board renamed.", "success");
+    },
+    onError: () => {
+      toast("Couldn't rename board.", "error");
     },
   });
 };

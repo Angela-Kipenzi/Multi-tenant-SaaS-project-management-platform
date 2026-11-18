@@ -10,12 +10,15 @@ import { ProjectsPage } from "@/features/projects/ProjectsPage";
 import { BoardPage } from "@/features/boards/BoardPage";
 import { BillingPage } from "@/features/billing/BillingPage"
 import { NotFound } from "./pages/NotFound";
+import { InboxPage } from "./features/notifications/InboxPage";
+import { MembersPage } from "@/features/members/MembersPage";
+import { RegisterPage } from "./features/auth/RestigerPage";
+import { MyTasksPage } from "./features/my-tasks/MyTasksPage";
+import { OverviewPage } from "./features/overview/OverviewPage";
 
 const App = () => {
   const { user, initialized, setAuth, clearAuth, setInitialized } = useAuthStore();
 
-  // On boot, try to refresh the access token using the HttpOnly cookie.
-  // If it succeeds, load /me and go to workspace selection.
   useEffect(() => {
     if (initialized) return;
     (async () => {
@@ -57,6 +60,10 @@ const App = () => {
           <Route path="/projects/:projectId/boards" element={<BoardPage />} />
           <Route path="/billing" element={<BillingPage />} />
           <Route path="*" element={<NotFound />} /> 
+          <Route path="/inbox" element={<InboxPage />} />
+          <Route path="/members" element={<MembersPage />} />
+          <Route path="/overview" element={<OverviewPage />} />
+          <Route path="/my-tasks" element={<MyTasksPage />} />
         </Route>
       </Route>
 
@@ -67,6 +74,7 @@ const App = () => {
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/register" element={<RegisterPage />} />
     </Routes>
   );
 };

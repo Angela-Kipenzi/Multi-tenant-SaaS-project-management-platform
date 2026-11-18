@@ -1,30 +1,94 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Spinner } from "@/components/Spinner";
 import { Button } from "@/components/Button";
+import { Input } from "@/components/Input";
+import { Modal } from "@/components/Modal";
+import { BoardHeader } from "./BoardHeader";
+import type { ViewMode } from "./BoardHeader";
 import { KanbanBoard } from "@/features/kanban/KanbanBoard";
+import { ListView } from "@/features/kanban/ListView";
 import { CreateIssueModal } from "@/features/kanban/CreateIssueModal";
-import { useBoards } from "./useBoards";
-import type { Board } from "@/types/api";
 import { IssueDetailModal } from "@/features/kanban/IssueDetailModal";
-import { SprintsPanel } from "../sprints/SprintsPanel";
+import { SprintsPanel } from "@/features/sprints/SprintsPanel";
+import { SearchModal } from "@/features/search/SearchModal";
+import { useIssues } from "@/features/kanban/useIssues";
+import { api, getCurrentWorkspaceId } from "@/lib/api";
+import { listMembers } from "@/services/workspaces";
+import type { Board,  Issue, Project } from "@/types/api";
+import type { Filters} from "@/types/api";
+import { useBoards, useCreateBoard, useUpdateBoard } from "./useBoards";
 
 export const BoardPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  const { data: boards, isLoading } = useBoards(projectId!);
-  const [activeBoard, setActiveBoard] = useState<Board | null>(null);
-  const [createColumnId, setCreateColumnId] = useState<string | null>(null);
+  const wsId = getCurrentWorkspaceId();
 
-  const board = activeBoard ?? boards?.[0] ?? null;
+  const { data: project } = useQuery({
+    queryKey: ["project", projectId],
+    queryFn: async () => {
+      const r = await api.get<Project>(`/workspaces/${wsId}/projects/${projectId}/`);
+      return r.data;
+    },
+    enabled: !!projectId,
+  });
+
+  const { data: boards, isLoading } = useBoards(projectId!);
+  const [activeBoardId] = useState<string | null>(null);
+  const [createColumnId, setCreateColumnId] = useState<string | null>(null);
   const [detailIssueId, setDetailIssueId] = useState<string | null>(null);
+  const [createBoardOpen, setCreateBoardOpen] = useState(false);
+  const [newBoardName, setNewBoardName] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("board");
+  const [filters, setFilters] = useState<Filters>({ priorities: [], assignees: [] });
+
+  const createBoardMutation = useCreateBoard(projectId!);
+  const board: Board | null = useMemo(() => {
+    if (!boards) return null;
+    if (activeBoardId) return boards.find((b) => b.id === activeBoardId) ?? boards[0] ?? null;
+    return boards[0] ?? null;
+  }, [boards, activeBoardId]);
+
+  const updateBoardMutation = useUpdateBoard(projectId!);
+
+  const { data: issues = [] } = useIssues(board?.id ?? "");
+
+  const { data: members = [] } = useQuery({
+    queryKey: ["members"],
+    queryFn: listMembers,
+    enabled: !!projectId,
+  });
+  const availableAssignees = members.map((m) => ({ id: m.user.id, email: m.user.email }));
+
+  const filteredIssues = useMemo(() => {
+    return issues.filter((i) => {
+      if (filters.priorities.length > 0 && !filters.priorities.includes(i.priority)) return false;
+      if (filters.assignees.length > 0) {
+        const id = i.assignee ?? "unassigned";
+        if (!filters.assignees.includes(id)) return false;
+      }
+      return true;
+    });
+  }, [issues, filters]);
+
+  // ⌘K / Ctrl+K
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   if (isLoading) {
     return (
       <AppShell>
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
+        <div className="flex justify-center py-12"><Spinner /></div>
       </AppShell>
     );
   }
@@ -32,70 +96,101 @@ export const BoardPage = () => {
   if (!boards || boards.length === 0) {
     return (
       <AppShell>
-        <div className="card p-12 text-center">
+        <div className="mx-auto max-w-md rounded-lg border border-slate-200 bg-white p-12 text-center">
           <p className="text-slate-600">This project has no boards yet.</p>
-          <p className="mt-1 text-xs text-slate-500">
-            Boards are created via the API for now. Phase G.3 will add the UI.
-          </p>
-          <Link to="/projects" className="mt-4 inline-block">
-            <Button variant="secondary">Back to projects</Button>
-          </Link>
+          <Button onClick={() => setCreateBoardOpen(true)} className="mt-4">Create first board</Button>
         </div>
+        <Modal
+          open={createBoardOpen}
+          onClose={() => setCreateBoardOpen(false)}
+          title="New board"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setCreateBoardOpen(false)}>Cancel</Button>
+              <Button
+                onClick={() => {
+                  if (!newBoardName.trim()) return;
+                  createBoardMutation.mutate(newBoardName.trim(), {
+                    onSuccess: () => { setNewBoardName(""); setCreateBoardOpen(false); },
+                  });
+                }}
+                loading={createBoardMutation.isPending}
+              >Create</Button>
+            </>
+          }
+        >
+          <Input label="Board name" value={newBoardName} onChange={(e) => setNewBoardName(e.target.value)} placeholder="Sprint 1" />
+        </Modal>
       </AppShell>
     );
   }
 
   return (
-    <AppShell>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <Link
-            to="/projects"
-            className="text-xs text-slate-500 hover:text-slate-700"
-          >
-            ← Projects
-          </Link>
-          <h1 className="text-2xl font-semibold text-slate-900">
-            {board?.name ?? "Board"}
-          </h1>
-          {boards.length > 1 && (
-            <div className="mt-2 flex gap-2">
-              {boards.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => setActiveBoard(b)}
-                  className={`rounded px-2 py-1 text-xs ${
-                    b.id === board?.id
-                      ? "bg-brand-100 text-brand-700"
-                      : "text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  {b.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
+    <AppShell
+      crumbs={[
+        { label: "Projects", to: "/projects" },
+        { label: project?.name ?? "Project" },
+      ]}
+    >
       {board && (
         <>
-        {projectId && <SprintsPanel projectId={projectId} />}
-          <KanbanBoard
-           board={board}
-           onIssueClick={(issue) => setDetailIssueId(issue.id)}
-           onAddIssue={(columnId) => setCreateColumnId(columnId)}
-           />
+          <BoardHeader
+            board={board}
+            issues={issues}
+            filteredIssues={filteredIssues}
+            filters={filters}
+            onFiltersChange={setFilters}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            onNewIssue={() => {
+              const firstColumn = board.columns[0]?.id;
+              if (firstColumn) setCreateColumnId(firstColumn);
+            }}
+            onOpenSearch={() => setSearchOpen(true)}
+            availableAssignees={availableAssignees}
+            onRenameBoard={(name) =>
+              updateBoardMutation.mutate({ boardId: board.id, name })
+            }
+            renaming={updateBoardMutation.isPending}
+          />
+          <div className="mt-4">
+            <SprintsPanel projectId={projectId!} />
+          </div>
+
+          <div className="mt-6">
+            {viewMode === "board" ? (
+              <KanbanBoard
+                board={board}
+                issuesOverride={filteredIssues}
+                onIssueClick={(issue: Issue) => setDetailIssueId(issue.id)}
+                onAddIssue={(columnId) => setCreateColumnId(columnId)}
+              />
+            ) : (
+              <ListView
+                issues={filteredIssues}
+                onIssueClick={(issue) => setDetailIssueId(issue.id)}
+              />
+            )}
+          </div>
+
           <CreateIssueModal
             open={!!createColumnId}
             onClose={() => setCreateColumnId(null)}
             boardId={board.id}
             columnId={createColumnId}
           />
+
           <IssueDetailModal
-          issueId={detailIssueId}
-          boardId={board.id}
-          onClose={() => setDetailIssueId(null)}
+            issueId={detailIssueId}
+            boardId={board.id}
+            onClose={() => setDetailIssueId(null)}
+          />
+
+          <SearchModal
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            issues={issues}
+            onSelect={(issue) => setDetailIssueId(issue.id)}
           />
         </>
       )}

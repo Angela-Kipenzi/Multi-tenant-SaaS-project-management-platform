@@ -4,6 +4,10 @@ export type Plan = "free" | "pro" | "enterprise";
 export interface User {
   id: string;
   email: string;
+  first_name: string;
+  last_name: string;
+  display_name: string;
+  initials: string;
   active_workspace: string | null;
   date_joined: string;
 }
@@ -50,6 +54,10 @@ export interface Board {
 
 export type IssueStatus = "todo" | "in_progress" | "review" | "done";
 export type IssuePriority = "low" | "medium" | "high" | "urgent";
+export interface Filters {
+  priorities: IssuePriority[];
+  assignees: string[];
+}
 
 export interface Issue {
   id: string;
@@ -64,7 +72,12 @@ export interface Issue {
   status: IssueStatus;
   priority: IssuePriority;
   assignee: string | null;
+  assignee_email: string | null;
+  assignee_display_name: string | null;
+  assignee_initials: string | null;
   reporter: string | null;
+  reporter_email: string | null;
+  reporter_display_name: string | null;
   order: number;
   created_at: string;
   updated_at: string;

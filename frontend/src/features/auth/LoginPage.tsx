@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
@@ -61,11 +61,13 @@ export const LoginPage = () => {
           <Button type="submit" loading={mutation.isPending} className="w-full">
             Sign in
           </Button>
+          <p className="mt-4 text-center text-sm text-slate-500">
+            No account?{" "}
+            <Link to="/register" className="font-medium text-brand-600 hover:text-brand-700">
+              Create one
+            </Link>
+          </p>
         </form>
-
-        <p className="mt-6 text-center text-xs text-slate-400">
-          Demo build · Test mode
-        </p>
       </div>
     </div>
   );

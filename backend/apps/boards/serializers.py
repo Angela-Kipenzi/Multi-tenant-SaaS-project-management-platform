@@ -28,3 +28,6 @@ class ColumnReorderSerializer(serializers.Serializer):
     order = serializers.ListField(
         child=serializers.UUIDField(), min_length=1, max_length=20
     )
+
+class BoardUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120, required=False)

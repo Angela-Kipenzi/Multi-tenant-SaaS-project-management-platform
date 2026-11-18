@@ -1,26 +1,17 @@
 import { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Avatar } from "@/components/Avatar";
 import { useAuthStore } from "@/store/authStore";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { listMyMemberships } from "@/services/workspaces";
-import { useProjects } from "@/features/projects/useProjects";
 import { getBillingPlan } from "@/services/billing";
+import { useNotifications } from "@/features/notifications/useNotifications";
+import { useMyTasks } from "@/features/my-tasks/useMyTasks";
 import { api } from "@/lib/api";
 
-const PROJECT_COLORS = [
-  "#6366f1", "#ec4899", "#f59e0b", "#10b981",
-  "#3b82f6", "#8b5cf6", "#ef4444", "#14b8a6",
-];
-
-const colorFor = (s: string): string => {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return PROJECT_COLORS[Math.abs(h) % PROJECT_COLORS.length];
-};
-
-const navItem = "flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-100";
+const navItem =
+  "flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50";
 const navItemActive = "bg-slate-100 text-slate-900 font-medium";
 
 export const Sidebar = () => {
@@ -36,12 +27,17 @@ export const Sidebar = () => {
     enabled: !!user,
   });
 
-  const { data: projects } = useProjects();
   const { data: billing } = useQuery({
     queryKey: ["billing-plan"],
     queryFn: getBillingPlan,
     enabled: !!workspace,
   });
+
+  const { data: notifications } = useNotifications();
+  const unreadCount = notifications?.filter((n) => !n.read_at).length ?? 0;
+
+  const { data: myTasks } = useMyTasks();
+  const myTaskCount = myTasks?.length ?? 0;
 
   const onLogout = async () => {
     try {
@@ -67,36 +63,24 @@ export const Sidebar = () => {
     : 0;
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-slate-200 bg-white">
-      {/* Logo */}
-      <div className="flex items-center gap-2 px-4 py-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
-          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 2L2 7l8 5 8-5-8-5zM2 17l8 5 8-5V9l-8 5-8-5v8z" />
-          </svg>
-        </div>
-        <span className="text-base font-semibold text-slate-900">Northstar</span>
-      </div>
-
+    <aside className="flex h-full w-64 flex-col border-r border-slate-200 bg-white">
       {/* Workspace switcher */}
       {workspace && memberships && (
-        <div className="relative px-3 pb-2">
+        <div className="relative border-b border-slate-100 p-3">
           <button
             onClick={() => setSwitcherOpen((v) => !v)}
             className="flex w-full items-center gap-2 rounded-lg border border-slate-200 p-2 text-left transition hover:border-slate-300"
           >
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-semibold text-white"
-              style={{ backgroundColor: colorFor(workspace.id) }}
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-600 text-sm font-semibold text-white"
             >
               {workspace.name[0]?.toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs text-slate-500">Workspace</p>
               <p className="truncate text-sm font-medium text-slate-900">
                 {workspace.name}
               </p>
-              <p className="text-xs capitalize text-slate-500">{role}</p>
+              <p className="truncate text-xs capitalize text-slate-500">{role}</p>
             </div>
             <svg
               className="h-3 w-3 text-slate-400"
@@ -104,12 +88,7 @@ export const Sidebar = () => {
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
 
@@ -119,14 +98,11 @@ export const Sidebar = () => {
                 <button
                   key={m.membership_id}
                   onClick={() => switchWorkspace(m)}
-                  className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50 ${
-                    m.workspace.id === workspace.id ? "bg-brand-50" : ""
-                  }`}
+                  className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50 ${m.workspace.id === workspace.id ? "bg-brand-50" : ""
+                    }`}
                 >
                   <span className="truncate">{m.workspace.name}</span>
-                  <span className="text-xs capitalize text-slate-500">
-                    {m.role}
-                  </span>
+                  <span className="text-xs capitalize text-slate-500">{m.role}</span>
                 </button>
               ))}
             </div>
@@ -135,13 +111,12 @@ export const Sidebar = () => {
       )}
 
       {/* Main nav */}
-      <nav className="flex-1 overflow-y-auto px-3">
-        <div className="space-y-1 py-2">
+      <nav className="flex-1 overflow-y-auto px-3 py-2">
+        <div className="space-y-1">
           <NavLink
             to="/projects"
-            className={({ isActive }) =>
-              `${navItem} ${isActive ? navItemActive : ""}`
-            }
+            end
+            className={({ isActive }) => `${navItem} ${isActive ? navItemActive : ""}`}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -150,29 +125,33 @@ export const Sidebar = () => {
           </NavLink>
 
           <NavLink
-            to="/projects"
-            className={({ isActive }) =>
-              `${navItem} ${isActive ? navItemActive : ""}`
-            }
+            to="/my-tasks"
+            className={({ isActive }) => `${navItem} ${isActive ? navItemActive : ""}`}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
             My tasks
-            <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">6</span>
+            {myTaskCount > 0 && (
+              <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                {myTaskCount}
+              </span>
+            )}
           </NavLink>
 
           <NavLink
             to="/inbox"
-            className={({ isActive }) =>
-              `${navItem} ${isActive ? navItemActive : ""}`
-            }
+            className={({ isActive }) => `${navItem} ${isActive ? navItemActive : ""}`}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             Inbox
-            <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">3</span>
+            {unreadCount > 0 && (
+              <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                {unreadCount}
+              </span>
+            )}
           </NavLink>
         </div>
 
@@ -183,9 +162,7 @@ export const Sidebar = () => {
           <div className="mt-2 space-y-1">
             <NavLink
               to="/projects"
-              className={({ isActive }) =>
-                `${navItem} ${isActive ? navItemActive : ""}`
-              }
+              className={({ isActive }) => `${navItem} ${isActive ? navItemActive : ""}`}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -194,9 +171,7 @@ export const Sidebar = () => {
             </NavLink>
             <NavLink
               to="/members"
-              className={({ isActive }) =>
-                `${navItem} ${isActive ? navItemActive : ""}`
-              }
+              className={({ isActive }) => `${navItem} ${isActive ? navItemActive : ""}`}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -205,9 +180,7 @@ export const Sidebar = () => {
             </NavLink>
             <NavLink
               to="/billing"
-              className={({ isActive }) =>
-                `${navItem} ${isActive ? navItemActive : ""}`
-              }
+              className={({ isActive }) => `${navItem} ${isActive ? navItemActive : ""}`}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -216,27 +189,6 @@ export const Sidebar = () => {
             </NavLink>
           </div>
         </div>
-
-        {/* Project list */}
-        {projects && projects.length > 0 && (
-          <div className="mt-4 pb-2">
-            <div className="space-y-0.5">
-              {projects.slice(0, 6).map((p) => (
-                <Link
-                  key={p.id}
-                  to={`/projects/${p.id}/boards`}
-                  className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
-                >
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: colorFor(p.id) }}
-                  />
-                  <span className="truncate">{p.name}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
       </nav>
 
       {/* Plan card */}
@@ -259,22 +211,27 @@ export const Sidebar = () => {
               style={{ width: `${Math.min(100, pctUsed)}%` }}
             />
           </div>
-          <Link
+          <NavLink
             to="/billing"
             className="mt-2 block text-xs font-medium text-brand-600 hover:text-brand-700"
           >
             {workspace?.plan === "free" ? "Upgrade plan" : "View plan"}
-          </Link>
+          </NavLink>
         </div>
       </div>
 
       {/* User */}
       <div className="border-t border-slate-100 p-3">
         <div className="flex items-center gap-2">
-          <Avatar email={user?.email ?? "unknown@example.com"} size={32} />
+          <Avatar
+            email={user?.email}
+            name={user?.display_name}
+            initials={user?.initials}
+            size={32}
+          />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-slate-900">
-              {user?.email.split("@")[0]}
+              {user?.display_name ?? user?.email}
             </p>
             <p className="truncate text-xs text-slate-500">{user?.email}</p>
           </div>

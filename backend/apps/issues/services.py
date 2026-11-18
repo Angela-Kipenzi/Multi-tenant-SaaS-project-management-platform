@@ -6,7 +6,7 @@ from apps.accounts.models import WorkspaceMembership
 from apps.accounts.roles import has_capability
 from apps.boards.models import Board, Column
 from apps.projects.models import Project
-from common.exceptions import Forbidden, NotFound, DomainError
+from common.exceptions import Conflict, Forbidden, NotFound, DomainError
 
 from .models import Issue, Sprint, Comment, Attachment
 from .sequence import next_issue_number
@@ -17,7 +17,22 @@ from django.utils import timezone
 from common.exceptions import Conflict, Forbidden, NotFound
 from django.db import models
 from apps.notifications.tasks import notify_assignment
+from apps.notifications.tasks import notify_comment
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
+def _enqueue(fn, **kwargs) -> None:
+    """Enqueue a Celery task, logging failures instead of raising.
+
+    A failed notification should not break the user's action.
+    """
+    try:
+        fn.delay(**kwargs)
+    except Exception as exc:
+        _logger.exception("Failed to enqueue %s: %s", fn.name, exc)
 
 def create_sprint(
     *, actor_membership: WorkspaceMembership, project_id, name: str,
@@ -30,6 +45,12 @@ def create_sprint(
     project = Project.objects.filter(workspace=workspace, id=project_id).first()
     if not project:
         raise NotFound("Project not found.")
+
+    if Sprint.objects.filter(project=project, name=name).exists():
+        raise Conflict(
+            f"A sprint named '{name}' already exists in this project.",
+            code="sprint_name_taken",
+        )
 
     return Sprint.objects.create(
         workspace=workspace, project=project, name=name,
@@ -57,6 +78,23 @@ def activate_sprint(*, actor_membership: WorkspaceMembership, sprint_id) -> Spri
     sprint.save(update_fields=["is_active", "updated_at"])
     return sprint
 
+def delete_sprint(*, actor_membership: WorkspaceMembership, sprint_id) -> None:
+    if not has_capability(actor_membership.role, "board.create"):
+        raise Forbidden("Role cannot delete sprints.")
+
+    workspace = actor_membership.workspace
+    sprint = Sprint.objects.filter(workspace=workspace, id=sprint_id).first()
+    if not sprint:
+        raise NotFound("Sprint not found.")
+    if sprint.is_active:
+        raise Conflict(
+            "Cannot delete an active sprint. Close it first.",
+            code="sprint_active",
+        )
+
+    # Issues in this sprint go back to the backlog.
+    sprint.issues.update(sprint=None)
+    sprint.delete()
 
 def create_issue(
     *, actor_membership: WorkspaceMembership, board_id, column_id,
@@ -132,12 +170,14 @@ def update_issue(
     issue.save()
 
     if assignee_id is not None and assignee_id != previous_assignee_id:
-        notify_assignment.delay(
+        _enqueue(
+            notify_assignment,
             user_id=str(assignee_id),
             workspace_id=str(workspace.id),
             issue_id=str(issue.id),
-        )
-    return issue
+            actor_id=str(actor_membership.user_id),
+            )
+        return issue
 
 
 def move_issue(
@@ -195,11 +235,19 @@ def move_issue(
 
         issue.column = target_column
         issue.order = target_order
-        # Sync status to semantic state — a column called "Done" doesn't
-        # automatically mean status="done" unless it maps to a status.
-        # For now, leave status alone; Phase D.5 adds a status-column mapping.
         issue.save()
         return issue
+
+def delete_issue(*, actor_membership: WorkspaceMembership, issue_id) -> None:
+    if not has_capability(actor_membership.role, "issue.delete"):
+        raise Forbidden("Role cannot delete issues.")
+
+    workspace = actor_membership.workspace
+    issue = Issue.objects.filter(workspace=workspace, id=issue_id).first()
+    if not issue:
+        raise NotFound("Issue not found.")
+
+    issue.soft_delete()
 
 
 def _column_max_order(workspace, column_id) -> int:
@@ -269,16 +317,36 @@ def create_comment(
         raise Forbidden("Role cannot comment.")
 
     workspace = actor_membership.workspace
-    issue = Issue.objects.filter(workspace=workspace, id=issue_id).first()
+    issue = Issue.objects.select_related("reporter", "assignee").filter(
+        workspace=workspace, id=issue_id
+    ).first()
     if not issue:
         raise NotFound("Issue not found.")
 
-    return Comment.objects.create(
+    comment = Comment.objects.create(
         workspace=workspace,
         issue=issue,
         author=actor_membership.user,
         body=body,
     )
+
+
+    recipients = set()
+    if issue.assignee_id and issue.assignee_id != actor_membership.user_id:
+        recipients.add(issue.assignee_id)
+    if issue.reporter_id and issue.reporter_id != actor_membership.user_id:
+        recipients.add(issue.reporter_id)
+
+    for recipient_id in recipients:
+        _enqueue(
+            notify_comment,
+            user_id=str(recipient_id),
+            workspace_id=str(workspace.id),
+            issue_id=str(issue.id),
+            actor_id=str(actor_membership.user_id),
+            preview=body,
+            )
+        return comment
 
 
 def delete_comment(

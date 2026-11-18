@@ -71,30 +71,46 @@ export const NotificationBell = () => {
               </p>
             ) : (
               <ul className="divide-y divide-slate-100">
-                {notifications.slice(0, 20).map((n) => (
-                  <li
-                    key={n.id}
-                    className={`px-4 py-3 ${!n.read_at ? "bg-brand-50" : ""}`}
-                  >
-                    <p className="text-sm text-slate-900">
-                      <span className="font-medium">
-                        {String(n.payload?.issue_key ?? "Issue")}
-                      </span>{" "}
-                      {kindLabel[n.kind] ?? n.kind}
-                    </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {formatTime(n.created_at)}
-                    </p>
-                    {!n.read_at && (
-                      <button
-                        onClick={() => markReadMutation.mutate(n.id)}
-                        className="mt-1 text-xs font-medium text-brand-600 hover:text-brand-700"
+                  {notifications.slice(0, 20).map((n) => {
+                    const actor = n.actor_display_name ?? n.actor_email ?? "Someone";
+                    const key = n.issue_key ?? "an issue";
+                    const preview =
+                      typeof n.payload?.preview === "string" ? n.payload.preview : null;
+
+                    return (
+                      <li
+                        key={n.id}
+                        className={`px-4 py-3 ${!n.read_at ? "bg-brand-50" : ""}`}
                       >
-                        Mark as read
-                      </button>
-                    )}
-                  </li>
-                ))}
+                        <p className="text-sm text-slate-900">
+                          <span className="font-medium">{actor}</span>{" "}
+                          {n.kind === "assigned"
+                            ? "assigned"
+                            : n.kind === "commented"
+                              ? "commented on"
+                              : "updated"}{" "}
+                          <span className="font-mono text-xs">{key}</span>
+                          {n.kind === "assigned" ? " to you" : ""}
+                        </p>
+                        {preview && (
+                          <p className="mt-1 line-clamp-2 text-xs italic text-slate-600">
+                            "{preview}"
+                          </p>
+                        )}
+                        <p className="mt-1 text-xs text-slate-500">
+                          {formatTime(n.created_at)}
+                        </p>
+                        {!n.read_at && (
+                          <button
+                            onClick={() => markReadMutation.mutate(n.id)}
+                            className="mt-1 text-xs font-medium text-brand-600 hover:text-brand-700"
+                          >
+                            Mark as read
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
               </ul>
             )}
           </div>

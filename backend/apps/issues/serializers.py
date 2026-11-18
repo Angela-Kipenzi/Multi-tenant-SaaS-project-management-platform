@@ -20,16 +20,32 @@ class SprintCreateSerializer(serializers.Serializer):
 
 
 class IssueSerializer(serializers.ModelSerializer):
+    assignee_email = serializers.EmailField(
+        source="assignee.email", read_only=True, allow_null=True
+    )
+    assignee_display_name = serializers.CharField(
+        source="assignee.display_name", read_only=True, allow_null=True
+    )
+    assignee_initials = serializers.CharField(
+        source="assignee.initials", read_only=True, allow_null=True
+    )
+    reporter_email = serializers.EmailField(
+        source="reporter.email", read_only=True, allow_null=True
+    )
+    reporter_display_name = serializers.CharField(
+        source="reporter.display_name", read_only=True, allow_null=True
+    )
+
     class Meta:
         model = Issue
         fields = (
             "id", "key", "number", "project", "board", "column", "sprint",
             "title", "description", "status", "priority",
-            "assignee", "reporter", "order", "created_at", "updated_at",
+            "assignee", "assignee_email", "assignee_display_name", "assignee_initials",
+            "reporter", "reporter_email", "reporter_display_name",
+            "order", "created_at", "updated_at",
         )
-        read_only_fields = ("id", "key", "number", "project", "board", "reporter",
-                            "created_at", "updated_at")
-
+        read_only_fields = fields
 
 class IssueCreateSerializer(serializers.Serializer):
     column_id = serializers.UUIDField()

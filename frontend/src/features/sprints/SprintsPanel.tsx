@@ -7,6 +7,7 @@ import {
   useActivateSprint,
   useCloseSprint,
   useCreateSprint,
+  useDeleteSprint,
   useSprints,
 } from "./useSprints";
 
@@ -15,6 +16,7 @@ export const SprintsPanel = ({ projectId }: { projectId: string }) => {
   const createMutation = useCreateSprint(projectId);
   const activateMutation = useActivateSprint(projectId);
   const closeMutation = useCloseSprint(projectId);
+  const deleteMutation = useDeleteSprint(projectId);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
@@ -43,7 +45,11 @@ export const SprintsPanel = ({ projectId }: { projectId: string }) => {
               </span>
               <button
                 onClick={() => {
-                  if (confirm(`Close "${active.name}"? Incomplete issues return to backlog.`)) {
+                  if (
+                    confirm(
+                      `Close "${active.name}"? Incomplete issues return to backlog.`
+                    )
+                  ) {
                     closeMutation.mutate(active.id);
                   }
                 }}
@@ -81,6 +87,18 @@ export const SprintsPanel = ({ projectId }: { projectId: string }) => {
                   className="text-brand-600 hover:text-brand-700 disabled:opacity-50"
                 >
                   Activate
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm(`Delete "${s.name}"?`)) {
+                      deleteMutation.mutate(s.id);
+                    }
+                  }}
+                  disabled={deleteMutation.isPending}
+                  className="text-slate-400 hover:text-red-600 disabled:opacity-50"
+                  title="Delete sprint"
+                >
+                  ✕
                 </button>
               </div>
             ))}

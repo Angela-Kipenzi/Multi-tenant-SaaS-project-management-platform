@@ -17,6 +17,10 @@ class Notification(TenantModel):
     workspace = models.ForeignKey(
         "tenants.Workspace", on_delete=models.CASCADE, related_name="notifications"
     )
+    actor = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="notifications_acted",
+    )
     kind = models.CharField(max_length=30, choices=Kind.choices)
     issue = models.ForeignKey(
         "issues.Issue", on_delete=models.CASCADE, null=True, blank=True,
@@ -33,3 +37,6 @@ class Notification(TenantModel):
                 name="idx_notif_user_unread",
             ),
         ]
+
+    def __str__(self) -> str:
+        return f"{self.kind} → {self.user_id}"

@@ -51,3 +51,8 @@ export const closeSprint = async (sprintId: string): Promise<Sprint> => {
   );
   return r.data;
 };
+
+export const deleteSprint = async (sprintId: string): Promise<void> => {
+  const wsId = getCurrentWorkspaceId();
+  await api.delete(`/workspaces/${wsId}/sprints/${sprintId}/`);
+};

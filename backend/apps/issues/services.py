@@ -330,6 +330,8 @@ def create_comment(
         body=body,
     )
 
+    # Notify the assignee and reporter (if any, and if not the commenter).
+    from apps.notifications.tasks import notify_comment
 
     recipients = set()
     if issue.assignee_id and issue.assignee_id != actor_membership.user_id:
@@ -345,8 +347,9 @@ def create_comment(
             issue_id=str(issue.id),
             actor_id=str(actor_membership.user_id),
             preview=body,
-            )
-        return comment
+        )
+
+    return comment
 
 
 def delete_comment(

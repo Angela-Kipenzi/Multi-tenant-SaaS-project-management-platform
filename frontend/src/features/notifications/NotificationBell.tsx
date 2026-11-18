@@ -1,12 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNotifications, useMarkRead } from "./useNotifications";
 
-const kindLabel: Record<string, string> = {
-  assigned: "assigned to you",
-  commented: "commented",
-  status_changed: "status changed",
-};
-
 const formatTime = (iso: string) => {
   const date = new Date(iso);
   const diffMs = Date.now() - date.getTime();

@@ -19,7 +19,8 @@ class UserFactory(DjangoModelFactory):
             return
         self.set_password(extracted or "correct-horse-battery")
         self.save()
-        
+
+
 class WorkspaceFactory(DjangoModelFactory):
     class Meta:
         model = Workspace

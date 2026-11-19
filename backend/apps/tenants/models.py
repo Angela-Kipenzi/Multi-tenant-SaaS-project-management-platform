@@ -12,8 +12,8 @@ class Plan(models.TextChoices):
 
 
 PLAN_LIMITS: dict[str, dict[str, int]] = {
-    Plan.FREE:       {"max_projects": 3,  "max_members": 5},
-    Plan.PRO:        {"max_projects": 50, "max_members": 25},
+    Plan.FREE: {"max_projects": 3, "max_members": 5},
+    Plan.PRO: {"max_projects": 50, "max_members": 25},
     Plan.ENTERPRISE: {"max_projects": 500, "max_members": 200},
 }
 

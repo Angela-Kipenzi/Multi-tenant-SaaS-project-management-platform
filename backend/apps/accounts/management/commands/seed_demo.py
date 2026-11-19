@@ -11,11 +11,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         email = "demo@example.com"
-        password = "correct-horse-battery"
+        password = "correct-horse-battery"  # noqa: S105 — demo fixture, not a real credential
 
-        user, created = User.objects.get_or_create(
-            email=email, defaults={"username": email}
-        )
+        user, created = User.objects.get_or_create(email=email, defaults={"username": email})
         if created:
             user.set_password(password)
             user.save()
@@ -33,6 +31,7 @@ class Command(BaseCommand):
 
         # Create project if none exists
         from apps.projects.models import Project
+
         project = Project.objects.filter(workspace=membership.workspace).first()
         if not project:
             project = create_project(
@@ -47,6 +46,7 @@ class Command(BaseCommand):
 
         # Create board if none exists
         from apps.boards.models import Board
+
         board = Board.objects.filter(project=project).first()
         if not board:
             board = create_board(
@@ -58,6 +58,6 @@ class Command(BaseCommand):
         else:
             self.stdout.write(f"Board exists: {board.name}")
 
-        self.stdout.write(self.style.SUCCESS(
-            f"\nLogin with:\n  email: {email}\n  password: {password}"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(f"\nLogin with:\n  email: {email}\n  password: {password}")
+        )

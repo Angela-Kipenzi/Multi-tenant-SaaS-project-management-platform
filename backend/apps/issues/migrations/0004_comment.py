@@ -8,7 +8,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("issues", "0003_workspace_triggers"),
         ("tenants", "0001_initial"),

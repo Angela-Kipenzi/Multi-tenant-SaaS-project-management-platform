@@ -14,6 +14,7 @@ pytestmark = pytest.mark.django_db
 
 # --- Checkout ---
 
+
 @patch("stripe.checkout.Session.create")
 def test_checkout_creates_session_and_returns_url(mock_create, owner):
     mock_create.return_value = type("S", (), {"url": "https://checkout.stripe.com/x"})()
@@ -45,6 +46,7 @@ def test_checkout_refuses_when_already_paid(mock_create, owner):
 
 # --- Portal ---
 
+
 @patch("stripe.billing_portal.Session.create")
 def test_portal_requires_customer(mock_create, owner):
     with pytest.raises(NotFound):
@@ -66,6 +68,7 @@ def test_portal_returns_url(mock_create, owner):
 
 # --- Webhook: checkout completed ---
 
+
 @patch("stripe.Subscription.retrieve")
 def test_checkout_completed_upgrades_plan(mock_retrieve, owner):
     mock_retrieve.return_value = {
@@ -74,11 +77,13 @@ def test_checkout_completed_upgrades_plan(mock_retrieve, owner):
     }
     event = {
         "type": "checkout.session.completed",
-        "data": {"object": {
-            "client_reference_id": str(owner.workspace_id),
-            "customer": "cus_abc",
-            "subscription": "sub_abc",
-        }},
+        "data": {
+            "object": {
+                "client_reference_id": str(owner.workspace_id),
+                "customer": "cus_abc",
+                "subscription": "sub_abc",
+            }
+        },
     }
     services.handle_webhook_event(event)
 
@@ -89,6 +94,7 @@ def test_checkout_completed_upgrades_plan(mock_retrieve, owner):
 
 
 # --- Webhook: subscription canceled ---
+
 
 def test_subscription_deleted_downgrades_plan(owner):
     owner.workspace.plan = Plan.PRO
@@ -107,6 +113,7 @@ def test_subscription_deleted_downgrades_plan(owner):
 
 
 # --- Webhook signature verification (integration-level) ---
+
 
 def test_webhook_rejects_unsigned_request(api_client):
     r = api_client.post(

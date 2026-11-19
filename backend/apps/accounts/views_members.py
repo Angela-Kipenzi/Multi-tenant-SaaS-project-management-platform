@@ -17,25 +17,25 @@ class MemberListView(APIView):
     required_capability = "member.invite"  # Admins+ can view; tweak if read should be broader
 
     def get(self, request, workspace_id):
-        qs = WorkspaceMembership.objects.filter(
-            workspace=request.workspace
-        ).select_related("user").order_by("created_at")
+        qs = (
+            WorkspaceMembership.objects.filter(workspace=request.workspace)
+            .select_related("user")
+            .order_by("created_at")
+        )
         return Response(MembershipSerializer(qs, many=True).data)
 
     def post(self, request, workspace_id):
         ser = InviteSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        result = services.invite_member(
-            actor_membership=request.membership, **ser.validated_data
-        )
+        result = services.invite_member(actor_membership=request.membership, **ser.validated_data)
         payload = {
             "membership": (
-                MembershipSerializer(result.membership).data
-                if result.membership else None
+                MembershipSerializer(result.membership).data if result.membership else None
             ),
             "invitation": (
                 {"id": str(result.invitation.id), "email": result.invitation.email}
-                if result.invitation else None
+                if result.invitation
+                else None
             ),
         }
         return Response(payload, status=status.HTTP_201_CREATED)
@@ -56,13 +56,13 @@ class MemberDetailView(APIView):
         return Response(MembershipSerializer(membership).data)
 
     def delete(self, request, workspace_id, user_id):
-        services.remove_member(
-            actor_membership=request.membership, target_user_id=user_id
-        )
+        services.remove_member(actor_membership=request.membership, target_user_id=user_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class InvitationDetailView(APIView):
     """Returns the current invitation details for an email — used by the invitee UI."""
+
     permission_classes = [HasWorkspaceContext]
     required_capability = "member.invite"
 
@@ -72,10 +72,12 @@ class InvitationDetailView(APIView):
         ).first()
         if not invitation:
             raise NotFound("Invitation not found.")
-        return Response({
-            "id": str(invitation.id),
-            "email": invitation.email,
-            "role": invitation.role,
-            "token": str(invitation.token),
-            "expires_at": invitation.expires_at,
-        })
+        return Response(
+            {
+                "id": str(invitation.id),
+                "email": invitation.email,
+                "role": invitation.role,
+                "token": str(invitation.token),
+                "expires_at": invitation.expires_at,
+            }
+        )

@@ -1,9 +1,11 @@
 """Domain exceptions. Mapped to HTTP in common/handlers.py."""
+
 from __future__ import annotations
 
 
 class DomainError(Exception):
     """Base — becomes 400."""
+
     code = "domain_error"
 
     def __init__(self, message: str, *, code: str | None = None):

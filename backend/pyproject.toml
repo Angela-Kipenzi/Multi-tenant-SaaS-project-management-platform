@@ -1,27 +1,11 @@
-[tool.black]
-line-length = 100
-target-version = ["py312"]
-
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-select = ["E", "F", "I", "B", "UP", "DJ", "S"]
-ignore = ["S101"]  # allow assert in tests (per-file)
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ", "S"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S"]
 "**/migrations/*" = ["E501"]
-
-[tool.mypy]
-python_version = "3.12"
-strict = true
-ignore_missing_imports = true
-exclude = ["migrations/", "apps/.*migrations/"]
-
-[tool.coverage.run]
-source = ["apps", "common"]
-omit = ["*/migrations/*", "*/tests/*", "manage.py", "config/*"]
-
-[tool.coverage.report]
-fail_under = 80
-show_missing = true

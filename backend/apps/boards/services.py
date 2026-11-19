@@ -10,9 +10,7 @@ from common.exceptions import Conflict, Forbidden, NotFound
 from .models import Board, Column
 
 
-def create_board(
-    *, actor_membership: WorkspaceMembership, project_id, name: str
-) -> Board:
+def create_board(*, actor_membership: WorkspaceMembership, project_id, name: str) -> Board:
     if not has_capability(actor_membership.role, "board.create"):
         raise Forbidden("Role cannot create boards.")
 
@@ -28,9 +26,7 @@ def create_board(
 
     # Seed default columns — every board gets a minimal workflow.
     for i, col_name in enumerate(["To Do", "In Progress", "Done"]):
-        Column.objects.create(
-            workspace=workspace, board=board, name=col_name, order=i
-        )
+        Column.objects.create(workspace=workspace, board=board, name=col_name, order=i)
     return board
 
 

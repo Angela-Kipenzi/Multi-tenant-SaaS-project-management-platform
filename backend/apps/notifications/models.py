@@ -18,12 +18,18 @@ class Notification(TenantModel):
         "tenants.Workspace", on_delete=models.CASCADE, related_name="notifications"
     )
     actor = models.ForeignKey(
-        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True,
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="notifications_acted",
     )
     kind = models.CharField(max_length=30, choices=Kind.choices)
     issue = models.ForeignKey(
-        "issues.Issue", on_delete=models.CASCADE, null=True, blank=True,
+        "issues.Issue",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name="notifications",
     )
     payload = models.JSONField(default=dict)

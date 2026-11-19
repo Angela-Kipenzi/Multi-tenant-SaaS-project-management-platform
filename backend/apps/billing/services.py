@@ -22,9 +22,7 @@ def _get_workspace_for_billing(actor_membership: WorkspaceMembership) -> Workspa
     return actor_membership.workspace
 
 
-def create_checkout_session(
-    *, actor_membership: WorkspaceMembership
-) -> str:
+def create_checkout_session(*, actor_membership: WorkspaceMembership) -> str:
     workspace = _get_workspace_for_billing(actor_membership)
 
     # Idempotency: if already subscribed, refuse. Owner should use portal.
@@ -47,9 +45,7 @@ def create_checkout_session(
     return session.url
 
 
-def create_portal_session(
-    *, actor_membership: WorkspaceMembership
-) -> str:
+def create_portal_session(*, actor_membership: WorkspaceMembership) -> str:
     workspace = _get_workspace_for_billing(actor_membership)
 
     if not workspace.stripe_customer_id:
@@ -79,8 +75,10 @@ def handle_checkout_completed(event: dict) -> None:
     workspace.subscription_status = Subscription.Status.ACTIVE
     workspace.save(
         update_fields=[
-            "stripe_customer_id", "stripe_subscription_id",
-            "plan", "subscription_status",
+            "stripe_customer_id",
+            "stripe_subscription_id",
+            "plan",
+            "subscription_status",
         ]
     )
 
@@ -92,9 +90,7 @@ def handle_checkout_completed(event: dict) -> None:
             "stripe_customer_id": session["customer"],
             "stripe_price_id": stripe_sub["items"]["data"][0]["price"]["id"],
             "status": Subscription.Status.ACTIVE,
-            "current_period_end": datetime.fromtimestamp(
-                stripe_sub["current_period_end"], tz=UTC
-            ),
+            "current_period_end": datetime.fromtimestamp(stripe_sub["current_period_end"], tz=UTC),
         },
     )
 
@@ -102,9 +98,7 @@ def handle_checkout_completed(event: dict) -> None:
 @transaction.atomic
 def handle_subscription_updated(event: dict) -> None:
     sub = event["data"]["object"]
-    workspace = Workspace.objects.filter(
-        stripe_subscription_id=sub["id"]
-    ).first()
+    workspace = Workspace.objects.filter(stripe_subscription_id=sub["id"]).first()
     if not workspace:
         return
 
@@ -118,13 +112,9 @@ def handle_subscription_updated(event: dict) -> None:
 
     workspace.save(update_fields=["subscription_status", "plan"])
 
-    Subscription.objects.filter(
-        stripe_subscription_id=sub["id"]
-    ).update(
+    Subscription.objects.filter(stripe_subscription_id=sub["id"]).update(
         status=status,
-        current_period_end=datetime.fromtimestamp(
-            sub["current_period_end"], tz=UTC
-        ),
+        current_period_end=datetime.fromtimestamp(sub["current_period_end"], tz=UTC),
         cancel_at_period_end=sub.get("cancel_at_period_end", False),
     )
 
@@ -132,9 +122,7 @@ def handle_subscription_updated(event: dict) -> None:
 @transaction.atomic
 def handle_subscription_deleted(event: dict) -> None:
     sub = event["data"]["object"]
-    workspace = Workspace.objects.filter(
-        stripe_subscription_id=sub["id"]
-    ).first()
+    workspace = Workspace.objects.filter(stripe_subscription_id=sub["id"]).first()
     if not workspace:
         return
 
@@ -142,9 +130,9 @@ def handle_subscription_deleted(event: dict) -> None:
     workspace.subscription_status = Subscription.Status.CANCELED
     workspace.save(update_fields=["plan", "subscription_status"])
 
-    Subscription.objects.filter(
-        stripe_subscription_id=sub["id"]
-    ).update(status=Subscription.Status.CANCELED)
+    Subscription.objects.filter(stripe_subscription_id=sub["id"]).update(
+        status=Subscription.Status.CANCELED
+    )
 
 
 def handle_webhook_event(event: dict) -> None:

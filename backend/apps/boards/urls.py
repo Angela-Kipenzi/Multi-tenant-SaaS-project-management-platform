@@ -12,7 +12,7 @@ urlpatterns = [
         ColumnReorderView.as_view(),
     ),
     path(
-    "workspaces/<uuid:workspace_id>/boards/<uuid:board_id>/",
-    BoardDetailView.as_view(),
-),
+        "workspaces/<uuid:workspace_id>/boards/<uuid:board_id>/",
+        BoardDetailView.as_view(),
+    ),
 ]

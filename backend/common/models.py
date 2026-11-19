@@ -1,4 +1,5 @@
 """Reusable abstract models. No business logic — just shared schema primitives."""
+
 from __future__ import annotations
 
 import uuid
@@ -35,12 +36,14 @@ class SoftDeleteQuerySet(models.QuerySet):
 
 class SoftDeleteManager(models.Manager.from_queryset(SoftDeleteQuerySet)):
     """Default manager excludes soft-deleted rows."""
+
     def get_queryset(self):
         return super().get_queryset().filter(deleted_at__isnull=True)
 
 
 class AllObjectsManager(models.Manager.from_queryset(SoftDeleteQuerySet)):
     """For admin/audit — sees deleted rows too."""
+
     pass
 
 
@@ -65,5 +68,6 @@ class TenantModel(UUIDModel, TimestampedModel):
     Subclasses MUST declare a `workspace` FK. The composite index on
     (workspace_id, created_at DESC) is applied per-concrete-model in its Meta.
     """
+
     class Meta:
         abstract = True

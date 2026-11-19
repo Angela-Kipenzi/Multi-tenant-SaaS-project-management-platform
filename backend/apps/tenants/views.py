@@ -23,12 +23,8 @@ class WorkspaceListCreateView(APIView):
     def post(self, request):
         ser = WorkspaceCreateSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        workspace = account_services.create_workspace(
-            creator=request.user, **ser.validated_data
-        )
-        return Response(
-            WorkspaceSerializer(workspace).data, status=status.HTTP_201_CREATED
-        )
+        workspace = account_services.create_workspace(creator=request.user, **ser.validated_data)
+        return Response(WorkspaceSerializer(workspace).data, status=status.HTTP_201_CREATED)
 
 
 class WorkspaceDetailView(APIView):
@@ -51,9 +47,7 @@ class WorkspaceDetailView(APIView):
 
 class MyMembershipsView(APIView):
     def get(self, request):
-        qs = WorkspaceMembership.objects.filter(user=request.user).select_related(
-            "workspace"
-        )
+        qs = WorkspaceMembership.objects.filter(user=request.user).select_related("workspace")
         data = [
             {
                 "workspace": WorkspaceSerializer(m.workspace).data,

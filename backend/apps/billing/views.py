@@ -19,14 +19,16 @@ class BillingPlanView(APIView):
     def get(self, request, workspace_id):
         ws = request.workspace
         limits = PLAN_LIMITS[ws.plan]
-        return Response({
-            "plan": ws.plan,
-            "subscription_status": ws.subscription_status,
-            "max_projects": limits["max_projects"],
-            "max_members": limits["max_members"],
-            "current_projects": ws.projects.count(),
-            "current_members": ws.memberships.count(),
-        })
+        return Response(
+            {
+                "plan": ws.plan,
+                "subscription_status": ws.subscription_status,
+                "max_projects": limits["max_projects"],
+                "max_members": limits["max_members"],
+                "current_projects": ws.projects.count(),
+                "current_members": ws.memberships.count(),
+            }
+        )
 
 
 class CheckoutView(APIView):
@@ -59,9 +61,7 @@ class StripeWebhookView(APIView):
             )
         except (ValueError, stripe.error.SignatureVerificationError):
             # 400 tells Stripe to retry with a fresh signature.
-            return Response(
-                {"detail": "Invalid signature."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"detail": "Invalid signature."}, status=status.HTTP_400_BAD_REQUEST)
 
         services.handle_webhook_event(event)
         return Response(status=status.HTTP_200_OK)

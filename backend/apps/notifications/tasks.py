@@ -17,14 +17,14 @@ def notify_assignment(self, *, user_id, workspace_id, issue_id, actor_id=None) -
     from apps.accounts.models import WorkspaceMembership
     from apps.issues.models import Issue
 
-    if not WorkspaceMembership.objects.filter(
-        user_id=user_id, workspace_id=workspace_id
-    ).exists():
+    if not WorkspaceMembership.objects.filter(user_id=user_id, workspace_id=workspace_id).exists():
         return  # user removed from workspace before task ran
 
-    issue = Issue.objects.select_related("project").filter(
-        id=issue_id, workspace_id=workspace_id
-    ).first()
+    issue = (
+        Issue.objects.select_related("project")
+        .filter(id=issue_id, workspace_id=workspace_id)
+        .first()
+    )
     if not issue:
         return  # issue deleted before task ran
 
@@ -51,20 +51,26 @@ def notify_assignment(self, *, user_id, workspace_id, issue_id, actor_id=None) -
     acks_late=True,
 )
 def notify_comment(
-    self, *, user_id, workspace_id, issue_id, actor_id, preview: str,
+    self,
+    *,
+    user_id,
+    workspace_id,
+    issue_id,
+    actor_id,
+    preview: str,
 ) -> None:
     """Create a 'commented' notification for the issue assignee (or reporter)."""
     from apps.accounts.models import WorkspaceMembership
     from apps.issues.models import Issue
 
-    if not WorkspaceMembership.objects.filter(
-        user_id=user_id, workspace_id=workspace_id
-    ).exists():
+    if not WorkspaceMembership.objects.filter(user_id=user_id, workspace_id=workspace_id).exists():
         return
 
-    issue = Issue.objects.select_related("project").filter(
-        id=issue_id, workspace_id=workspace_id
-    ).first()
+    issue = (
+        Issue.objects.select_related("project")
+        .filter(id=issue_id, workspace_id=workspace_id)
+        .first()
+    )
     if not issue:
         return
 

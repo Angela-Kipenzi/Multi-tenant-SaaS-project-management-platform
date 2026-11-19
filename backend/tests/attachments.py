@@ -24,9 +24,12 @@ def _valid_key(issue):
 
 def test_create_attachment(owner, issue):
     att = services.create_attachment(
-        actor_membership=owner, issue_id=issue.id,
-        file_key=_valid_key(issue), file_name="screenshot.png",
-        file_size=1024, content_type="image/png",
+        actor_membership=owner,
+        issue_id=issue.id,
+        file_key=_valid_key(issue),
+        file_name="screenshot.png",
+        file_size=1024,
+        content_type="image/png",
     )
     assert att.file_name == "screenshot.png"
 
@@ -34,9 +37,12 @@ def test_create_attachment(owner, issue):
 def test_wrong_prefix_rejected(owner, issue):
     with pytest.raises(DomainError) as exc:
         services.create_attachment(
-            actor_membership=owner, issue_id=issue.id,
+            actor_membership=owner,
+            issue_id=issue.id,
             file_key="other-ws/other-issue/abc.png",
-            file_name="x.png", file_size=1, content_type="image/png",
+            file_name="x.png",
+            file_size=1,
+            content_type="image/png",
         )
     assert exc.value.code == "bad_file_key"
 
@@ -44,9 +50,12 @@ def test_wrong_prefix_rejected(owner, issue):
 def test_disallowed_content_type(owner, issue):
     with pytest.raises(DomainError) as exc:
         services.create_attachment(
-            actor_membership=owner, issue_id=issue.id,
-            file_key=_valid_key(issue), file_name="x.exe",
-            file_size=1, content_type="application/x-msdownload",
+            actor_membership=owner,
+            issue_id=issue.id,
+            file_key=_valid_key(issue),
+            file_name="x.exe",
+            file_size=1,
+            content_type="application/x-msdownload",
         )
     assert exc.value.code == "bad_content_type"
 
@@ -55,7 +64,10 @@ def test_viewer_cannot_attach(issue):
     viewer = MembershipFactory(workspace=issue.workspace, role="viewer")
     with pytest.raises(Forbidden):
         services.create_attachment(
-            actor_membership=viewer, issue_id=issue.id,
-            file_key=_valid_key(issue), file_name="x.png",
-            file_size=1, content_type="image/png",
+            actor_membership=viewer,
+            issue_id=issue.id,
+            file_key=_valid_key(issue),
+            file_name="x.png",
+            file_size=1,
+            content_type="image/png",
         )

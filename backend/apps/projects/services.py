@@ -34,15 +34,16 @@ def create_project(
 
 
 def update_project(
-    *, actor_membership: WorkspaceMembership, project_id, name: str | None = None,
+    *,
+    actor_membership: WorkspaceMembership,
+    project_id,
+    name: str | None = None,
     description: str | None = None,
 ) -> Project:
     if not has_capability(actor_membership.role, "project.update"):
         raise Forbidden("Role cannot update projects.")
 
-    project = Project.objects.filter(
-        workspace=actor_membership.workspace, id=project_id
-    ).first()
+    project = Project.objects.filter(workspace=actor_membership.workspace, id=project_id).first()
     if not project:
         raise NotFound("Project not found.")
 
@@ -58,9 +59,7 @@ def delete_project(*, actor_membership: WorkspaceMembership, project_id) -> None
     if not has_capability(actor_membership.role, "project.delete"):
         raise Forbidden("Role cannot delete projects.")
 
-    project = Project.objects.filter(
-        workspace=actor_membership.workspace, id=project_id
-    ).first()
+    project = Project.objects.filter(workspace=actor_membership.workspace, id=project_id).first()
     if not project:
         raise NotFound("Project not found.")
 

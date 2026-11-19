@@ -28,9 +28,15 @@ def _enqueue(fn, **kwargs) -> None:
     except Exception as exc:
         _logger.exception("Failed to enqueue %s: %s", fn.name, exc)
 
+
 def create_sprint(
-    *, actor_membership: WorkspaceMembership, project_id, name: str, goal: str = "",
-    start_date=None, end_date=None,
+    *,
+    actor_membership: WorkspaceMembership,
+    project_id,
+    name: str,
+    goal: str = "",
+    start_date=None,
+    end_date=None,
 ) -> Sprint:
     if not has_capability(actor_membership.role, "board.create"):
         raise Forbidden("Role cannot create sprints.")
@@ -47,8 +53,11 @@ def create_sprint(
         )
 
     return Sprint.objects.create(
-        workspace=workspace, project=project, name=name,
-        start_date=start_date, end_date=end_date,
+        workspace=workspace,
+        project=project,
+        name=name,
+        start_date=start_date,
+        end_date=end_date,
     )
 
 
@@ -58,9 +67,7 @@ def activate_sprint(*, actor_membership: WorkspaceMembership, sprint_id) -> Spri
         raise Forbidden("Role cannot activate sprints.")
 
     workspace = actor_membership.workspace
-    sprint = Sprint.objects.select_for_update().filter(
-        workspace=workspace, id=sprint_id
-    ).first()
+    sprint = Sprint.objects.select_for_update().filter(workspace=workspace, id=sprint_id).first()
     if not sprint:
         raise NotFound("Sprint not found.")
 
@@ -71,6 +78,7 @@ def activate_sprint(*, actor_membership: WorkspaceMembership, sprint_id) -> Spri
     sprint.is_active = True
     sprint.save(update_fields=["is_active", "updated_at"])
     return sprint
+
 
 def delete_sprint(*, actor_membership: WorkspaceMembership, sprint_id) -> None:
     if not has_capability(actor_membership.role, "board.create"):
@@ -90,18 +98,23 @@ def delete_sprint(*, actor_membership: WorkspaceMembership, sprint_id) -> None:
     sprint.issues.update(sprint=None)
     sprint.delete()
 
+
 def create_issue(
-    *, actor_membership: WorkspaceMembership, board_id, column_id,
-    title: str, description: str = "", priority: str = "medium",
-    sprint_id=None, assignee_id=None,
+    *,
+    actor_membership: WorkspaceMembership,
+    board_id,
+    column_id,
+    title: str,
+    description: str = "",
+    priority: str = "medium",
+    sprint_id=None,
+    assignee_id=None,
 ) -> Issue:
     if not has_capability(actor_membership.role, "issue.create"):
         raise Forbidden("Role cannot create issues.")
 
     workspace = actor_membership.workspace
-    board = Board.objects.select_related("project").filter(
-        workspace=workspace, id=board_id
-    ).first()
+    board = Board.objects.select_related("project").filter(workspace=workspace, id=board_id).first()
     if not board:
         raise NotFound("Board not found.")
 
@@ -118,9 +131,7 @@ def create_issue(
     number = next_issue_number(board.project_id)
     key = f"{board.project.key}-{number}"
 
-    max_order = Issue.objects.filter(
-        workspace=workspace, column=column
-    ).count()
+    max_order = Issue.objects.filter(workspace=workspace, column=column).count()
 
     return Issue.objects.create(
         workspace=workspace,
@@ -137,6 +148,7 @@ def create_issue(
         priority=priority,
         order=max_order,
     )
+
 
 def update_issue(
     *,
@@ -163,6 +175,7 @@ def update_issue(
 
     if assignee_id is not None and assignee_id != "":
         from apps.accounts.models import WorkspaceMembership as WM
+
         if not WM.objects.filter(workspace=workspace, user_id=assignee_id).exists():
             raise NotFound("Assignee not found.")
 
@@ -206,24 +219,27 @@ def update_issue(
         .first()
     )
 
+
 def move_issue(
-    *, actor_membership: WorkspaceMembership, issue_id,
-    column_id, order: int, expected_updated_at: datetime,
+    *,
+    actor_membership: WorkspaceMembership,
+    issue_id,
+    column_id,
+    order: int,
+    expected_updated_at: datetime,
 ) -> Issue:
     workspace = actor_membership.workspace
 
     with transaction.atomic():
         # Lock the row to serialize concurrent moves of the same issue.
-        issue = (
-            Issue.objects.select_for_update()
-            .filter(workspace=workspace, id=issue_id)
-            .first()
-        )
+        issue = Issue.objects.select_for_update().filter(workspace=workspace, id=issue_id).first()
         if not issue:
             raise NotFound("Issue not found.")
 
-        if not has_capability(actor_membership.role, "issue.update_any") and \
-           issue.assignee_id != actor_membership.user_id:
+        if (
+            not has_capability(actor_membership.role, "issue.update_any")
+            and issue.assignee_id != actor_membership.user_id
+        ):
             raise Forbidden("Role cannot move this issue.")
 
         # Optimistic concurrency: client's expected_updated_at must match
@@ -235,9 +251,7 @@ def move_issue(
             )
 
         target_column = (
-            Column.objects.filter(workspace=workspace, id=column_id)
-            .select_related("board")
-            .first()
+            Column.objects.filter(workspace=workspace, id=column_id).select_related("board").first()
         )
         if not target_column:
             raise NotFound("Column not found.")
@@ -280,6 +294,7 @@ def move_issue(
         issue.save()
         return issue
 
+
 def delete_issue(*, actor_membership: WorkspaceMembership, issue_id) -> None:
     if not has_capability(actor_membership.role, "issue.delete"):
         raise Forbidden("Role cannot delete issues.")
@@ -293,11 +308,7 @@ def delete_issue(*, actor_membership: WorkspaceMembership, issue_id) -> None:
 
 
 def _column_max_order(workspace, column_id) -> int:
-    return (
-        Issue.objects
-        .filter(workspace=workspace, column_id=column_id)
-        .count()
-    )
+    return Issue.objects.filter(workspace=workspace, column_id=column_id).count()
 
 
 def _shift_within_column(workspace, column_id, old_order: int, new_order: int) -> None:
@@ -305,26 +316,30 @@ def _shift_within_column(workspace, column_id, old_order: int, new_order: int) -
         return
     if old_order < new_order:
         Issue.objects.filter(
-            workspace=workspace, column_id=column_id,
-            order__gt=old_order, order__lte=new_order,
+            workspace=workspace,
+            column_id=column_id,
+            order__gt=old_order,
+            order__lte=new_order,
         ).update(order=models.F("order") - 1)
     else:
         Issue.objects.filter(
-            workspace=workspace, column_id=column_id,
-            order__gte=new_order, order__lt=old_order,
+            workspace=workspace,
+            column_id=column_id,
+            order__gte=new_order,
+            order__lt=old_order,
         ).update(order=models.F("order") + 1)
 
 
 def _shift_source_column(workspace, column_id, old_order: int) -> None:
-    Issue.objects.filter(
-        workspace=workspace, column_id=column_id, order__gt=old_order
-    ).update(order=models.F("order") - 1)
+    Issue.objects.filter(workspace=workspace, column_id=column_id, order__gt=old_order).update(
+        order=models.F("order") - 1
+    )
 
 
 def _shift_target_column(workspace, column_id, target_order: int) -> None:
-    Issue.objects.filter(
-        workspace=workspace, column_id=column_id, order__gte=target_order
-    ).update(order=models.F("order") + 1)
+    Issue.objects.filter(workspace=workspace, column_id=column_id, order__gte=target_order).update(
+        order=models.F("order") + 1
+    )
 
 
 @transaction.atomic
@@ -333,11 +348,7 @@ def close_sprint(*, actor_membership: WorkspaceMembership, sprint_id) -> Sprint:
         raise Forbidden("Role cannot close sprints.")
 
     workspace = actor_membership.workspace
-    sprint = (
-        Sprint.objects.select_for_update()
-        .filter(workspace=workspace, id=sprint_id)
-        .first()
-    )
+    sprint = Sprint.objects.select_for_update().filter(workspace=workspace, id=sprint_id).first()
     if not sprint:
         raise NotFound("Sprint not found.")
     if not sprint.is_active:
@@ -352,16 +363,22 @@ def close_sprint(*, actor_membership: WorkspaceMembership, sprint_id) -> Sprint:
     sprint.save(update_fields=["is_active", "updated_at"])
     return sprint
 
+
 def create_comment(
-    *, actor_membership: WorkspaceMembership, issue_id, body: str,
+    *,
+    actor_membership: WorkspaceMembership,
+    issue_id,
+    body: str,
 ) -> Comment:
     if not has_capability(actor_membership.role, "comment.create"):
         raise Forbidden("Role cannot comment.")
 
     workspace = actor_membership.workspace
-    issue = Issue.objects.select_related("reporter", "assignee").filter(
-        workspace=workspace, id=issue_id
-    ).first()
+    issue = (
+        Issue.objects.select_related("reporter", "assignee")
+        .filter(workspace=workspace, id=issue_id)
+        .first()
+    )
     if not issue:
         raise NotFound("Issue not found.")
 
@@ -389,11 +406,14 @@ def create_comment(
             actor_id=str(actor_membership.user_id),
             preview=body,
         )
-        return comment
+
+    return comment
 
 
 def delete_comment(
-    *, actor_membership: WorkspaceMembership, comment_id,
+    *,
+    actor_membership: WorkspaceMembership,
+    comment_id,
 ) -> None:
     workspace = actor_membership.workspace
     comment = Comment.objects.filter(workspace=workspace, id=comment_id).first()
@@ -408,24 +428,32 @@ def delete_comment(
 
     comment.soft_delete()
 
+
 ATTACHMENT_ALLOWED_TYPES = {
-    "image/png", "image/jpeg", "image/gif", "image/webp",
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/webp",
     "application/pdf",
-    "text/plain", "text/csv",
+    "text/plain",
+    "text/csv",
 }
 
 
 def create_attachment(
-    *, actor_membership: WorkspaceMembership, issue_id,
-    file_key: str, file_name: str, file_size: int, content_type: str,
+    *,
+    actor_membership: WorkspaceMembership,
+    issue_id,
+    file_key: str,
+    file_name: str,
+    file_size: int,
+    content_type: str,
 ) -> Attachment:
     if not has_capability(actor_membership.role, "comment.create"):
         raise Forbidden("Role cannot attach files.")
 
     if content_type not in ATTACHMENT_ALLOWED_TYPES:
-        raise DomainError(
-            f"Content type {content_type} not allowed.", code="bad_content_type"
-        )
+        raise DomainError(f"Content type {content_type} not allowed.", code="bad_content_type")
 
     workspace = actor_membership.workspace
     issue = Issue.objects.filter(workspace=workspace, id=issue_id).first()
@@ -439,20 +467,23 @@ def create_attachment(
         raise DomainError("Invalid file_key prefix.", code="bad_file_key")
 
     return Attachment.objects.create(
-        workspace=workspace, issue=issue,
-        file_key=file_key, file_name=file_name,
-        file_size=file_size, content_type=content_type,
+        workspace=workspace,
+        issue=issue,
+        file_key=file_key,
+        file_name=file_name,
+        file_size=file_size,
+        content_type=content_type,
         uploaded_by=actor_membership.user,
     )
 
 
 def delete_attachment(
-    *, actor_membership: WorkspaceMembership, attachment_id,
+    *,
+    actor_membership: WorkspaceMembership,
+    attachment_id,
 ) -> None:
     workspace = actor_membership.workspace
-    attachment = Attachment.objects.filter(
-        workspace=workspace, id=attachment_id
-    ).first()
+    attachment = Attachment.objects.filter(workspace=workspace, id=attachment_id).first()
     if not attachment:
         raise NotFound("Attachment not found.")
 

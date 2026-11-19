@@ -9,9 +9,7 @@ class Board(TenantModel, SoftDeleteModel):
     workspace = models.ForeignKey(
         "tenants.Workspace", on_delete=models.CASCADE, related_name="boards"
     )
-    project = models.ForeignKey(
-        "projects.Project", on_delete=models.CASCADE, related_name="boards"
-    )
+    project = models.ForeignKey("projects.Project", on_delete=models.CASCADE, related_name="boards")
     name = models.CharField(max_length=120)
 
     class Meta:

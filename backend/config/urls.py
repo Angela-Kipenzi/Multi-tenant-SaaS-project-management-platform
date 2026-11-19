@@ -10,13 +10,12 @@ api_v1_patterns = [
     path("auth/", include("apps.accounts.urls_auth")),
     path("", include("apps.accounts.urls_members")),
     path("", include("apps.tenants.urls")),
-    
-    path("", include("apps.projects.urls")),       
-    path("", include("apps.boards.urls")),         
-    path("", include("apps.issues.urls")),         
-    # path("", include("apps.audit.urls")),          
-    path("", include("apps.notifications.urls")), 
-    path("", include("apps.billing.urls")),        
+    path("", include("apps.projects.urls")),
+    path("", include("apps.boards.urls")),
+    path("", include("apps.issues.urls")),
+    # path("", include("apps.audit.urls")),
+    path("", include("apps.notifications.urls")),
+    path("", include("apps.billing.urls")),
 ]
 
 urlpatterns = [

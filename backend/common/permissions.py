@@ -22,8 +22,7 @@ class HasWorkspaceContext(BasePermission):
         from apps.accounts.models import WorkspaceMembership
 
         membership = (
-            WorkspaceMembership.objects
-            .select_related("workspace")
+            WorkspaceMembership.objects.select_related("workspace")
             .filter(user=request.user, workspace_id=ws_id)
             .first()
         )

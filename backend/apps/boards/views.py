@@ -20,9 +20,7 @@ from .serializers import (
 
 
 def _get_own_project(request, project_id) -> Project:
-    project = Project.objects.filter(
-        workspace=request.workspace, id=project_id
-    ).first()
+    project = Project.objects.filter(workspace=request.workspace, id=project_id).first()
     if not project:
         raise NotFound("Project not found.")
     return project
@@ -51,13 +49,16 @@ class BoardListCreateView(APIView):
         )
         return Response(BoardSerializer(board).data, status=status.HTTP_201_CREATED)
 
+
 class BoardDetailView(APIView):
     permission_classes = [HasWorkspaceContext]
 
     def get(self, request, workspace_id, board_id):
-        board = Board.objects.filter(
-            workspace=request.workspace, id=board_id
-        ).prefetch_related("columns").first()
+        board = (
+            Board.objects.filter(workspace=request.workspace, id=board_id)
+            .prefetch_related("columns")
+            .first()
+        )
         if not board:
             raise NotFound("Board not found.")
         return Response(BoardSerializer(board).data)
@@ -66,9 +67,11 @@ class BoardDetailView(APIView):
         if not has_capability(request.membership.role, "board.create"):
             raise Forbidden("Role cannot edit boards.")
 
-        board = Board.objects.filter(
-            workspace=request.workspace, id=board_id
-        ).prefetch_related("columns").first()
+        board = (
+            Board.objects.filter(workspace=request.workspace, id=board_id)
+            .prefetch_related("columns")
+            .first()
+        )
         if not board:
             raise NotFound("Board not found.")
 
@@ -80,8 +83,9 @@ class BoardDetailView(APIView):
             if not new_name:
                 raise DomainError("Board name cannot be empty.")
             if (
-                Board.objects
-                .filter(workspace=request.workspace, project=board.project, name__iexact=new_name)
+                Board.objects.filter(
+                    workspace=request.workspace, project=board.project, name__iexact=new_name
+                )
                 .exclude(id=board.id)
                 .exists()
             ):
@@ -100,9 +104,7 @@ class ColumnReorderView(APIView):
 
     def post(self, request, workspace_id, board_id):
         # Reorder is scoped by board — verify the board first.
-        board = Board.objects.filter(
-            workspace=request.workspace, id=board_id
-        ).first()
+        board = Board.objects.filter(workspace=request.workspace, id=board_id).first()
         if not board:
             raise NotFound("Board not found.")
         ser = ColumnReorderSerializer(data=request.data)

@@ -13,9 +13,7 @@ from .serializers import ProjectCreateSerializer, ProjectSerializer
 
 
 def _get_own_project(request, project_id) -> Project:
-    project = Project.objects.filter(
-        workspace=request.workspace, id=project_id
-    ).first()
+    project = Project.objects.filter(workspace=request.workspace, id=project_id).first()
     if not project:
         raise NotFound("Project not found.")
     return project
@@ -25,20 +23,14 @@ class ProjectListCreateView(APIView):
     permission_classes = [HasWorkspaceContext]
 
     def get(self, request, workspace_id):
-        projects = Project.objects.filter(
-            workspace=request.workspace
-        ).order_by("-created_at")
+        projects = Project.objects.filter(workspace=request.workspace).order_by("-created_at")
         return Response(ProjectSerializer(projects, many=True).data)
 
     def post(self, request, workspace_id):
         ser = ProjectCreateSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        project = services.create_project(
-            actor_membership=request.membership, **ser.validated_data
-        )
-        return Response(
-            ProjectSerializer(project).data, status=status.HTTP_201_CREATED
-        )
+        project = services.create_project(actor_membership=request.membership, **ser.validated_data)
+        return Response(ProjectSerializer(project).data, status=status.HTTP_201_CREATED)
 
 
 class ProjectDetailView(APIView):
@@ -58,7 +50,5 @@ class ProjectDetailView(APIView):
         return Response(ProjectSerializer(project).data)
 
     def delete(self, request, workspace_id, project_id):
-        services.delete_project(
-            actor_membership=request.membership, project_id=project_id
-        )
+        services.delete_project(actor_membership=request.membership, project_id=project_id)
         return Response(status=status.HTTP_204_NO_CONTENT)

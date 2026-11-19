@@ -1,4 +1,5 @@
 """All account/membership business logic. Views and serializers must not implement any of this."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -23,24 +24,28 @@ class InviteResult:
 
 
 def register_user(
-    *, email: str, password: str,
-    first_name: str = "", last_name: str = "",
+    *,
+    email: str,
+    password: str,
+    first_name: str = "",
+    last_name: str = "",
 ) -> User:
     if User.objects.filter(email__iexact=email).exists():
         raise Conflict("An account with this email already exists.", code="email_taken")
     return User.objects.create_user(
-        email=email, password=password,
-        first_name=first_name, last_name=last_name,
+        email=email,
+        password=password,
+        first_name=first_name,
+        last_name=last_name,
     )
+
 
 def create_workspace(*, creator: User, name: str, slug: str) -> Workspace:
     if Workspace.objects.filter(slug=slug).exists():
         raise Conflict("Slug already in use.", code="slug_taken")
     with transaction.atomic():
         workspace = Workspace.objects.create(name=name, slug=slug, plan=Plan.FREE)
-        WorkspaceMembership.objects.create(
-            user=creator, workspace=workspace, role=Role.OWNER
-        )
+        WorkspaceMembership.objects.create(user=creator, workspace=workspace, role=Role.OWNER)
         creator.active_workspace = workspace
         creator.save(update_fields=["active_workspace"])
     return workspace
@@ -51,9 +56,7 @@ def _assert_capability(membership: WorkspaceMembership, capability: str) -> None
         raise Forbidden(f"Role '{membership.role}' cannot perform '{capability}'.")
 
 
-def invite_member(
-    *, actor_membership: WorkspaceMembership, email: str, role: str
-) -> InviteResult:
+def invite_member(*, actor_membership: WorkspaceMembership, email: str, role: str) -> InviteResult:
     _assert_capability(actor_membership, "member.invite")
     workspace = actor_membership.workspace
 
@@ -64,9 +67,7 @@ def invite_member(
     if rank(role) == rank(Role.OWNER) and actor_membership.role != Role.OWNER:
         raise Forbidden("Only owners can grant ownership.")
 
-    if WorkspaceMembership.objects.filter(
-        workspace=workspace, user__email__iexact=email
-    ).exists():
+    if WorkspaceMembership.objects.filter(workspace=workspace, user__email__iexact=email).exists():
         raise Conflict("User is already a member.", code="already_member")
 
     if WorkspaceMembership.objects.filter(workspace=workspace).count() >= workspace.max_members:
@@ -93,9 +94,7 @@ def invite_member(
 
 
 def _active_owner_count(workspace: Workspace) -> int:
-    return WorkspaceMembership.objects.filter(
-        workspace=workspace, role=Role.OWNER
-    ).count()
+    return WorkspaceMembership.objects.filter(workspace=workspace, role=Role.OWNER).count()
 
 
 @transaction.atomic
@@ -111,10 +110,10 @@ def change_member_role(
         raise Forbidden("Cannot assign a role higher than your own.")
 
     workspace = actor_membership.workspace
-    # select_for_update serializes concurrent role changes to prevent racing the last-owner invariant.
+    # select_for_update serializes concurrent role changes to prevent
+    #  racing the last-owner invariant.
     membership = (
-        WorkspaceMembership.objects
-        .select_for_update()
+        WorkspaceMembership.objects.select_for_update()
         .filter(workspace=workspace, user_id=target_user_id)
         .first()
     )
@@ -131,14 +130,11 @@ def change_member_role(
 
 
 @transaction.atomic
-def remove_member(
-    *, actor_membership: WorkspaceMembership, target_user_id
-) -> None:
+def remove_member(*, actor_membership: WorkspaceMembership, target_user_id) -> None:
     _assert_capability(actor_membership, "member.remove")
     workspace = actor_membership.workspace
     membership = (
-        WorkspaceMembership.objects
-        .select_for_update()
+        WorkspaceMembership.objects.select_for_update()
         .filter(workspace=workspace, user_id=target_user_id)
         .first()
     )
@@ -155,10 +151,7 @@ def remove_member(
 @transaction.atomic
 def accept_invitation(*, token, user: User) -> WorkspaceMembership:
     invite = (
-        Invitation.objects
-        .select_for_update()
-        .filter(token=token, accepted_at__isnull=True)
-        .first()
+        Invitation.objects.select_for_update().filter(token=token, accepted_at__isnull=True).first()
     )
     if not invite:
         raise NotFound("Invitation not found.")
@@ -168,7 +161,8 @@ def accept_invitation(*, token, user: User) -> WorkspaceMembership:
         raise Forbidden("Invitation was issued to a different email.")
 
     membership, _ = WorkspaceMembership.objects.get_or_create(
-        user=user, workspace=invite.workspace,
+        user=user,
+        workspace=invite.workspace,
         defaults={"role": invite.role},
     )
     invite.accepted_at = timezone.now()

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("issues", "0006_sprint_uniq_sprint_name_per_project"),
     ]

@@ -1,4 +1,5 @@
 """Audit log writer. Append-only by DB trigger (Phase E)."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -15,6 +16,7 @@ def record_audit(
     metadata: dict[str, Any] | None = None,
 ) -> None:
     from apps.audit.models import AuditLog  # late import
+
     AuditLog.objects.create(
         workspace_id=workspace_id,
         actor_id=actor_id,

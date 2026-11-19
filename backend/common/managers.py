@@ -4,6 +4,7 @@ Tenant-aware manager.
 Design goal: make `Model.objects.filter(...)` on tenant-scoped models
 REQUIRE a workspace_id in the filter, or raise. Fails loud, not silent.
 """
+
 from __future__ import annotations
 
 from django.core.exceptions import ImproperlyConfigured
@@ -28,10 +29,7 @@ class TenantQuerySet(models.QuerySet):
             self._tenant_checked = True
             return
         where = self.query.where
-        has_tenant = any(
-            "workspace_id" in str(child)
-            for child in getattr(where, "children", [])
-        )
+        has_tenant = any("workspace_id" in str(child) for child in getattr(where, "children", []))
         if not has_tenant:
             raise MissingTenantFilter(
                 f"Tenant-scoped query on {self.model.__name__} must filter by workspace_id. "

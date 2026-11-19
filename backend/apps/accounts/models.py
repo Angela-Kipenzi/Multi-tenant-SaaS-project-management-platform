@@ -34,7 +34,8 @@ class User(UUIDModel, AbstractUser):
     active_workspace = models.ForeignKey(
         "tenants.Workspace",
         on_delete=models.SET_NULL,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         related_name="active_users",
     )
 
@@ -87,6 +88,7 @@ class WorkspaceMembership(UUIDModel, TimestampedModel):
 
 class Invitation(UUIDModel, TimestampedModel):
     """Pending invitation for an email that isn't a registered user yet."""
+
     workspace = models.ForeignKey(
         "tenants.Workspace", on_delete=models.CASCADE, related_name="invitations"
     )

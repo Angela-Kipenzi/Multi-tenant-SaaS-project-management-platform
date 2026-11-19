@@ -17,9 +17,11 @@ class NotificationListView(APIView):
 
     def get(self, request, workspace_id):
         unread_only = request.query_params.get("unread") == "true"
-        qs = Notification.objects.filter(
-            workspace=request.workspace, user=request.user
-        ).select_related("actor", "issue").order_by("-created_at")
+        qs = (
+            Notification.objects.filter(workspace=request.workspace, user=request.user)
+            .select_related("actor", "issue")
+            .order_by("-created_at")
+        )
         if unread_only:
             qs = qs.filter(read_at__isnull=True)
         return Response(NotificationSerializer(qs[:100], many=True).data)

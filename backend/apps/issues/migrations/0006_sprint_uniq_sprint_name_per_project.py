@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("issues", "0005_attachment"),
         ("projects", "0001_initial"),

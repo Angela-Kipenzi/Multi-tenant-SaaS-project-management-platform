@@ -34,7 +34,6 @@ urlpatterns = [
         "workspaces/<uuid:workspace_id>/issues/<uuid:issue_id>/history/",
         IssueHistoryView.as_view(),
     ),
-
     # ---- Comments ----
     path(
         "workspaces/<uuid:workspace_id>/issues/<uuid:issue_id>/comments/",
@@ -44,7 +43,6 @@ urlpatterns = [
         "workspaces/<uuid:workspace_id>/comments/<uuid:comment_id>/",
         CommentDeleteView.as_view(),
     ),
-
     # ---- Attachments ----
     path(
         "workspaces/<uuid:workspace_id>/issues/<uuid:issue_id>/attachments/",
@@ -54,7 +52,6 @@ urlpatterns = [
         "workspaces/<uuid:workspace_id>/attachments/<uuid:attachment_id>/",
         AttachmentDeleteView.as_view(),
     ),
-
     # ---- Sprints ----
     path(
         "workspaces/<uuid:workspace_id>/projects/<uuid:project_id>/sprints/",
@@ -73,7 +70,6 @@ urlpatterns = [
         "workspaces/<uuid:workspace_id>/sprints/<uuid:sprint_id>/close/",
         SprintCloseView.as_view(),
     ),
-
     # ---- Reports ----
     path(
         "workspaces/<uuid:workspace_id>/boards/<uuid:board_id>/reports/",

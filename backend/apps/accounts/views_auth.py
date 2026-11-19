@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from django.conf import settings
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -11,6 +13,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from . import services
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
 
+_logger = logging.getLogger(__name__)
 REFRESH_COOKIE = "refresh_token"
 
 
@@ -57,6 +60,7 @@ class LoginView(APIView):
         ser = LoginSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         from django.contrib.auth import authenticate
+
         user = authenticate(
             request._request,
             username=ser.validated_data["email"],
@@ -100,7 +104,7 @@ class LogoutView(APIView):
             try:
                 RefreshToken(token).blacklist()
             except Exception:
-                pass
+                _logger.warning("Could not blacklist refresh token on logout", exc_info=True)
         resp = Response(status=status.HTTP_204_NO_CONTENT)
         resp.delete_cookie(REFRESH_COOKIE, path="/api/v1/auth/")
         return resp

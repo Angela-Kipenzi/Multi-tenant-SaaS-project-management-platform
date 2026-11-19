@@ -23,18 +23,25 @@ def _setup_board(owner):
 
 def test_move_issue_within_column(owner):
     _, board, todo, done = _setup_board(owner)
-    issues = [IssueFactory(workspace=owner.workspace, board=board, column=todo, order=i)
-              for i in range(3)]
+    issues = [
+        IssueFactory(workspace=owner.workspace, board=board, column=todo, order=i) for i in range(3)
+    ]
 
     moved = services.move_issue(
-        actor_membership=owner, issue_id=issues[0].id,
-        column_id=todo.id, order=2, expected_updated_at=issues[0].updated_at,
+        actor_membership=owner,
+        issue_id=issues[0].id,
+        column_id=todo.id,
+        order=2,
+        expected_updated_at=issues[0].updated_at,
     )
     assert moved.order == 2
 
     # Orders are re-indexed.
-    orders = list(Issue.objects.filter(workspace=owner.workspace, column=todo)
-                  .order_by("order").values_list("id", "order"))
+    orders = list(
+        Issue.objects.filter(workspace=owner.workspace, column=todo)
+        .order_by("order")
+        .values_list("id", "order")
+    )
     assert [o for _, o in orders] == [0, 1, 2]
 
 
@@ -43,8 +50,11 @@ def test_move_issue_across_columns(owner):
     issue = IssueFactory(workspace=owner.workspace, board=board, column=todo, order=0)
 
     moved = services.move_issue(
-        actor_membership=owner, issue_id=issue.id,
-        column_id=done.id, order=0, expected_updated_at=issue.updated_at,
+        actor_membership=owner,
+        issue_id=issue.id,
+        column_id=done.id,
+        order=0,
+        expected_updated_at=issue.updated_at,
     )
     assert moved.column_id == done.id
 
@@ -57,8 +67,11 @@ def test_move_issue_stale_returns_conflict(owner):
 
     with pytest.raises(Conflict) as exc:
         services.move_issue(
-            actor_membership=owner, issue_id=issue.id,
-            column_id=done.id, order=0, expected_updated_at=stale,
+            actor_membership=owner,
+            issue_id=issue.id,
+            column_id=done.id,
+            order=0,
+            expected_updated_at=stale,
         )
     assert exc.value.code == "stale_write"
 
@@ -73,43 +86,49 @@ def test_move_issue_to_wrong_board_column_returns_conflict(owner):
 
     with pytest.raises(Conflict) as exc:
         services.move_issue(
-            actor_membership=owner, issue_id=issue.id,
-            column_id=other_column.id, order=0, expected_updated_at=issue.updated_at,
+            actor_membership=owner,
+            issue_id=issue.id,
+            column_id=other_column.id,
+            order=0,
+            expected_updated_at=issue.updated_at,
         )
     assert exc.value.code == "wrong_board"
 
 
 def test_close_sprint_moves_incomplete_to_backlog(owner):
     from apps.issues.models import Sprint
+
     project = ProjectFactory(workspace=owner.workspace)
     board = BoardFactory(workspace=owner.workspace, project=project)
     column = ColumnFactory(workspace=owner.workspace, board=board, order=0)
     sprint = Sprint.objects.create(
         workspace=owner.workspace, project=project, name="S1", is_active=True
     )
-    done_issue = IssueFactory(workspace=owner.workspace, board=board,
-                              column=column, sprint=sprint, status="done")
-    open_issue = IssueFactory(workspace=owner.workspace, board=board,
-                              column=column, sprint=sprint, status="in_progress")
+    done_issue = IssueFactory(
+        workspace=owner.workspace, board=board, column=column, sprint=sprint, status="done"
+    )
+    open_issue = IssueFactory(
+        workspace=owner.workspace, board=board, column=column, sprint=sprint, status="in_progress"
+    )
 
     services.close_sprint(actor_membership=owner, sprint_id=sprint.id)
 
     done_issue.refresh_from_db()
     open_issue.refresh_from_db()
-    assert done_issue.sprint_id == sprint.id        # done stays
-    assert open_issue.sprint_id is None             # incomplete → backlog
+    assert done_issue.sprint_id == sprint.id  # done stays
+    assert open_issue.sprint_id is None  # incomplete → backlog
+
 
 def test_issue_history_records_update(owner):
     _, board, column, _ = _setup_board(owner)
     issue = IssueFactory(workspace=owner.workspace, board=board, column=column)
 
-    services.update_issue(
-        actor_membership=owner, issue_id=issue.id, title="Renamed"
-    )
+    services.update_issue(actor_membership=owner, issue_id=issue.id, title="Renamed")
 
     history = issue.history.all().order_by("history_date")
-    assert history.count() == 2   # create + update
+    assert history.count() == 2  # create + update
     assert history.last().title == "Renamed"
+
 
 def test_delete_issue_soft_deletes(owner):
     project = ProjectFactory(workspace=owner.workspace)

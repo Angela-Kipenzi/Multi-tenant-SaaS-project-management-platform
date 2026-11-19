@@ -28,8 +28,8 @@ class Sprint(TenantModel):
             ),
             models.UniqueConstraint(
                 fields=["project", "name"],
-                  name="uniq_sprint_name_per_project",
-                  ),
+                name="uniq_sprint_name_per_project",
+            ),
         ]
         indexes = [
             models.Index(
@@ -59,15 +59,9 @@ class Issue(TenantModel, SoftDeleteModel):
     workspace = models.ForeignKey(
         "tenants.Workspace", on_delete=models.CASCADE, related_name="issues"
     )
-    project = models.ForeignKey(
-        "projects.Project", on_delete=models.CASCADE, related_name="issues"
-    )
-    board = models.ForeignKey(
-        "boards.Board", on_delete=models.CASCADE, related_name="issues"
-    )
-    column = models.ForeignKey(
-        "boards.Column", on_delete=models.PROTECT, related_name="issues"
-    )
+    project = models.ForeignKey("projects.Project", on_delete=models.CASCADE, related_name="issues")
+    board = models.ForeignKey("boards.Board", on_delete=models.CASCADE, related_name="issues")
+    column = models.ForeignKey("boards.Column", on_delete=models.PROTECT, related_name="issues")
     sprint = models.ForeignKey(
         Sprint, on_delete=models.SET_NULL, null=True, blank=True, related_name="issues"
     )
@@ -76,9 +70,7 @@ class Issue(TenantModel, SoftDeleteModel):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.TODO)
-    priority = models.CharField(
-        max_length=20, choices=Priority.choices, default=Priority.MEDIUM
-    )
+    priority = models.CharField(max_length=20, choices=Priority.choices, default=Priority.MEDIUM)
     assignee = models.ForeignKey(
         "accounts.User",
         on_delete=models.SET_NULL,
@@ -111,17 +103,14 @@ class Issue(TenantModel, SoftDeleteModel):
                 name="idx_issue_kanban",
             ),
             models.Index(fields=["workspace", "sprint"], name="idx_issue_ws_sprint"),
-            models.Index(
-                fields=["workspace", "assignee"], name="idx_issue_ws_assignee"
-            ),
-            models.Index(
-                fields=["workspace", "updated_at"], name="idx_issue_ws_updated"
-            ),
+            models.Index(fields=["workspace", "assignee"], name="idx_issue_ws_assignee"),
+            models.Index(fields=["workspace", "updated_at"], name="idx_issue_ws_updated"),
         ]
         ordering = ["order", "created_at"]
 
     def __str__(self) -> str:
         return f"{self.key}: {self.title}"
+
 
 class Comment(TenantModel, SoftDeleteModel):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name="comments")
@@ -129,7 +118,9 @@ class Comment(TenantModel, SoftDeleteModel):
         "tenants.Workspace", on_delete=models.CASCADE, related_name="comments"
     )
     author = models.ForeignKey(
-        "accounts.User", on_delete=models.SET_NULL, null=True,
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
         related_name="comments",
     )
     body = models.TextField(max_length=10000)
@@ -146,28 +137,27 @@ class Comment(TenantModel, SoftDeleteModel):
     def __str__(self) -> str:
         return f"Comment by {self.author_id} on {self.issue_id}"
 
+
 class Attachment(TenantModel, SoftDeleteModel):
-    issue = models.ForeignKey(
-        Issue, on_delete=models.CASCADE, related_name="attachments"
-    )
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name="attachments")
     workspace = models.ForeignKey(
         "tenants.Workspace", on_delete=models.CASCADE, related_name="attachments"
     )
-    file_key = models.CharField(max_length=512)         # S3 key, e.g. "ws/…/uuid.pdf"
-    file_name = models.CharField(max_length=255)         # original filename
+    file_key = models.CharField(max_length=512)  # S3 key, e.g. "ws/…/uuid.pdf"
+    file_name = models.CharField(max_length=255)  # original filename
     file_size = models.PositiveBigIntegerField()
     content_type = models.CharField(max_length=100)
     uploaded_by = models.ForeignKey(
-        "accounts.User", on_delete=models.SET_NULL, null=True,
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
         related_name="attachments",
     )
 
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(
-                fields=["workspace", "issue"], name="idx_attachment_ws_issue"
-            ),
+            models.Index(fields=["workspace", "issue"], name="idx_attachment_ws_issue"),
         ]
 
     def __str__(self) -> str:

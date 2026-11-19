@@ -24,6 +24,7 @@ pytestmark = pytest.mark.django_db
 # Helpers
 # --------------------------------------------------------------------------- #
 
+
 def _client_with_token(api_client, membership):
     api_client.force_authenticate(membership.user)
     api_client.defaults["HTTP_X_WORKSPACE_ID"] = str(membership.workspace.id)
@@ -33,6 +34,7 @@ def _client_with_token(api_client, membership):
 # --------------------------------------------------------------------------- #
 # Workspace
 # --------------------------------------------------------------------------- #
+
 
 def test_workspace_detail_foreign_returns_404(api_client, owner):
     other = OwnerMembershipFactory()
@@ -46,7 +48,8 @@ def test_workspace_patch_foreign_returns_404(api_client, owner):
     client = _client_with_token(api_client, owner)
     r = client.patch(
         f"/api/v1/workspaces/{other.workspace.id}/",
-        {"name": "hax"}, format="json",
+        {"name": "hax"},
+        format="json",
     )
     assert r.status_code == 404
 
@@ -61,6 +64,7 @@ def test_workspace_delete_foreign_returns_404(api_client, owner):
 # --------------------------------------------------------------------------- #
 # Members
 # --------------------------------------------------------------------------- #
+
 
 def test_member_list_foreign_returns_404(api_client, owner):
     other = OwnerMembershipFactory()
@@ -84,6 +88,7 @@ def test_member_invite_foreign_returns_404(api_client, owner):
 # Projects
 # --------------------------------------------------------------------------- #
 
+
 def test_create_project_in_foreign_workspace_returns_404(api_client, owner):
     other = OwnerMembershipFactory()
     client = _client_with_token(api_client, owner)
@@ -106,9 +111,7 @@ def test_project_detail_foreign_returns_404(api_client, owner):
     other = OwnerMembershipFactory()
     other_project = ProjectFactory(workspace=other.workspace)
     client = _client_with_token(api_client, owner)
-    r = client.get(
-        f"/api/v1/workspaces/{owner.workspace.id}/projects/{other_project.id}/"
-    )
+    r = client.get(f"/api/v1/workspaces/{owner.workspace.id}/projects/{other_project.id}/")
     assert r.status_code == 404
 
 
@@ -118,7 +121,8 @@ def test_project_patch_foreign_returns_404(api_client, owner):
     client = _client_with_token(api_client, owner)
     r = client.patch(
         f"/api/v1/workspaces/{owner.workspace.id}/projects/{other_project.id}/",
-        {"name": "hax"}, format="json",
+        {"name": "hax"},
+        format="json",
     )
     assert r.status_code == 404
 
@@ -127,9 +131,7 @@ def test_project_delete_foreign_returns_404(api_client, owner):
     other = OwnerMembershipFactory()
     other_project = ProjectFactory(workspace=other.workspace)
     client = _client_with_token(api_client, owner)
-    r = client.delete(
-        f"/api/v1/workspaces/{owner.workspace.id}/projects/{other_project.id}/"
-    )
+    r = client.delete(f"/api/v1/workspaces/{owner.workspace.id}/projects/{other_project.id}/")
     assert r.status_code == 404
 
 
@@ -137,13 +139,12 @@ def test_project_delete_foreign_returns_404(api_client, owner):
 # Boards
 # --------------------------------------------------------------------------- #
 
+
 def test_board_list_foreign_project_returns_404(api_client, owner):
     other = OwnerMembershipFactory()
     other_project = ProjectFactory(workspace=other.workspace)
     client = _client_with_token(api_client, owner)
-    r = client.get(
-        f"/api/v1/workspaces/{owner.workspace.id}/projects/{other_project.id}/boards/"
-    )
+    r = client.get(f"/api/v1/workspaces/{owner.workspace.id}/projects/{other_project.id}/boards/")
     assert r.status_code == 404
 
 
@@ -176,14 +177,13 @@ def test_column_reorder_foreign_board_returns_404(api_client, owner):
 # Issues
 # --------------------------------------------------------------------------- #
 
+
 def test_issue_list_foreign_board_returns_404(api_client, owner):
     other = OwnerMembershipFactory()
     other_project = ProjectFactory(workspace=other.workspace)
     other_board = BoardFactory(workspace=other.workspace, project=other_project)
     client = _client_with_token(api_client, owner)
-    r = client.get(
-        f"/api/v1/workspaces/{owner.workspace.id}/boards/{other_board.id}/issues/"
-    )
+    r = client.get(f"/api/v1/workspaces/{owner.workspace.id}/boards/{other_board.id}/issues/")
     assert r.status_code == 404
 
 
@@ -206,13 +206,9 @@ def test_issue_detail_foreign_returns_404(api_client, owner):
     other_project = ProjectFactory(workspace=other.workspace)
     other_board = BoardFactory(workspace=other.workspace, project=other_project)
     other_column = ColumnFactory(workspace=other.workspace, board=other_board)
-    other_issue = IssueFactory(
-        workspace=other.workspace, board=other_board, column=other_column
-    )
+    other_issue = IssueFactory(workspace=other.workspace, board=other_board, column=other_column)
     client = _client_with_token(api_client, owner)
-    r = client.get(
-        f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/"
-    )
+    r = client.get(f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/")
     assert r.status_code == 404
 
 
@@ -221,21 +217,24 @@ def test_issue_move_foreign_returns_404(api_client, owner):
     other_project = ProjectFactory(workspace=other.workspace)
     other_board = BoardFactory(workspace=other.workspace, project=other_project)
     other_column = ColumnFactory(workspace=other.workspace, board=other_board)
-    other_issue = IssueFactory(
-        workspace=other.workspace, board=other_board, column=other_column
-    )
+    other_issue = IssueFactory(workspace=other.workspace, board=other_board, column=other_column)
     client = _client_with_token(api_client, owner)
     r = client.post(
         f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/move/",
-        {"column_id": str(other_column.id), "order": 0,
-         "expected_updated_at": other_issue.updated_at.isoformat()},
+        {
+            "column_id": str(other_column.id),
+            "order": 0,
+            "expected_updated_at": other_issue.updated_at.isoformat(),
+        },
         format="json",
     )
     assert r.status_code == 404
 
+
 # --------------------------------------------------------------------------- #
 # Plan limits
 # --------------------------------------------------------------------------- #
+
 
 def test_plan_limit_exceeded_returns_402(api_client, owner):
     """Free plan allows 3 projects. Create 3, then a 4th must 402."""
@@ -254,6 +253,7 @@ def test_plan_limit_exceeded_returns_402(api_client, owner):
 # --------------------------------------------------------------------------- #
 # Database-level isolation (defense in depth)
 # --------------------------------------------------------------------------- #
+
 
 def test_db_trigger_blocks_cross_tenant_issue(db):
     """Even a raw SQL bypass attempt is rejected by the DB trigger."""
@@ -287,6 +287,7 @@ def test_db_trigger_blocks_cross_tenant_issue(db):
 # Header-less behavior (documented placeholder)
 # --------------------------------------------------------------------------- #
 
+
 def test_missing_workspace_header_returns_404_for_scoped_endpoint(api_client, owner):
     """Authenticated user hits a scoped URL without X-Workspace-ID header."""
     api_client.force_authenticate(owner.user)
@@ -294,7 +295,7 @@ def test_missing_workspace_header_returns_404_for_scoped_endpoint(api_client, ow
     assert r.status_code in (200, 404)
 
 
-# --------------------------------------------------------------------------- # 
+# --------------------------------------------------------------------------- #
 # comment tests
 # --------------------------------------------------------------------------- #
 def test_comment_list_foreign_issue_returns_404(api_client, owner):
@@ -302,13 +303,9 @@ def test_comment_list_foreign_issue_returns_404(api_client, owner):
     other_project = ProjectFactory(workspace=other.workspace)
     other_board = BoardFactory(workspace=other.workspace, project=other_project)
     other_column = ColumnFactory(workspace=other.workspace, board=other_board)
-    other_issue = IssueFactory(
-        workspace=other.workspace, board=other_board, column=other_column
-    )
+    other_issue = IssueFactory(workspace=other.workspace, board=other_board, column=other_column)
     client = _client_with_token(api_client, owner)
-    r = client.get(
-        f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/comments/"
-    )
+    r = client.get(f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/comments/")
     assert r.status_code == 404
 
 
@@ -317,9 +314,7 @@ def test_comment_create_foreign_issue_returns_404(api_client, owner):
     other_project = ProjectFactory(workspace=other.workspace)
     other_board = BoardFactory(workspace=other.workspace, project=other_project)
     other_column = ColumnFactory(workspace=other.workspace, board=other_board)
-    other_issue = IssueFactory(
-        workspace=other.workspace, board=other_board, column=other_column
-    )
+    other_issue = IssueFactory(workspace=other.workspace, board=other_board, column=other_column)
     client = _client_with_token(api_client, owner)
     r = client.post(
         f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/comments/",
@@ -329,7 +324,7 @@ def test_comment_create_foreign_issue_returns_404(api_client, owner):
     assert r.status_code == 404
 
     # --------------------------------------------------------------------------- #
-    #attachment tests
+    # attachment tests
     # --------------------------------------------------------------------------- #
     def test_attachment_list_foreign_issue_returns_404(api_client, owner):
         other = OwnerMembershipFactory()
@@ -345,25 +340,29 @@ def test_comment_create_foreign_issue_returns_404(api_client, owner):
         )
         assert r.status_code == 404
 
+
 def test_attachment_create_foreign_issue_returns_404(api_client, owner):
     other = OwnerMembershipFactory()
     other_project = ProjectFactory(workspace=other.workspace)
     other_board = BoardFactory(workspace=other.workspace, project=other_project)
     other_column = ColumnFactory(workspace=other.workspace, board=other_board)
-    other_issue = IssueFactory(
-        workspace=other.workspace, board=other_board, column=other_column
-    )
+    other_issue = IssueFactory(workspace=other.workspace, board=other_board, column=other_column)
     client = _client_with_token(api_client, owner)
     r = client.post(
         f"/api/v1/workspaces/{owner.workspace.id}/issues/{other_issue.id}/attachments/",
-        {"file_key": "abc.png", "file_name": "abc.png", "file_size": 1024, "content_type": "image/png"},
+        {
+            "file_key": "abc.png",
+            "file_name": "abc.png",
+            "file_size": 1024,
+            "content_type": "image/png",
+        },
         format="json",
     )
     assert r.status_code == 404
 
 
-#--------------------------------------------------------------------------- #
-#billing tests
+# --------------------------------------------------------------------------- #
+# billing tests
 # --------------------------------------------------------------------------- #
 def test_billing_plan_foreign_returns_404(api_client, owner):
     other = OwnerMembershipFactory()

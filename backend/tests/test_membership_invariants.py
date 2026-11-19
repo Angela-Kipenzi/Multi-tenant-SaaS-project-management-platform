@@ -21,19 +21,13 @@ def test_cannot_demote_last_owner(owner):
 
 def test_cannot_remove_last_owner(owner):
     with pytest.raises(Conflict):
-        services.remove_member(
-            actor_membership=owner, target_user_id=owner.user.id
-        )
+        services.remove_member(actor_membership=owner, target_user_id=owner.user.id)
 
 
 def test_admin_cannot_grant_owner(owner):
     admin_user = UserFactory()
-    admin = MembershipFactory(
-        user=admin_user, workspace=owner.workspace, role=Role.ADMIN
-    )
-    target = MembershipFactory(
-        workspace=owner.workspace, role=Role.MEMBER
-    )
+    admin = MembershipFactory(user=admin_user, workspace=owner.workspace, role=Role.ADMIN)
+    target = MembershipFactory(workspace=owner.workspace, role=Role.MEMBER)
     with pytest.raises(Forbidden):
         services.change_member_role(
             actor_membership=admin,
@@ -55,14 +49,10 @@ def test_invite_hits_plan_limit_on_free_workspace(owner):
 
 def test_invite_existing_user_creates_membership(owner):
     existing = UserFactory()
-    result = services.invite_member(
-        actor_membership=owner, email=existing.email, role=Role.MEMBER
-    )
+    result = services.invite_member(actor_membership=owner, email=existing.email, role=Role.MEMBER)
     assert result.membership is not None
     assert result.invitation is None
-    assert WorkspaceMembership.objects.filter(
-        workspace=owner.workspace, user=existing
-    ).exists()
+    assert WorkspaceMembership.objects.filter(workspace=owner.workspace, user=existing).exists()
 
 
 def test_invite_unknown_email_creates_pending_invitation(owner):

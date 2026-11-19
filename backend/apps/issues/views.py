@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from datetime import date
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from datetime import date
+
 from apps.accounts.models import User
 from apps.boards.models import Board
 from apps.projects.models import Project
@@ -38,9 +40,7 @@ def _get_own_board(request, board_id) -> Board:
 
 
 def _get_own_project(request, project_id) -> Project:
-    project = Project.objects.filter(
-        workspace=request.workspace, id=project_id
-    ).first()
+    project = Project.objects.filter(workspace=request.workspace, id=project_id).first()
     if not project:
         raise NotFound("Project not found.")
     return project
@@ -67,9 +67,7 @@ class IssueListCreateView(APIView):
             board_id=board_id,
             **ser.validated_data,
         )
-        return Response(
-            IssueSerializer(issue).data, status=status.HTTP_201_CREATED
-        )
+        return Response(IssueSerializer(issue).data, status=status.HTTP_201_CREATED)
 
 
 class IssueDetailView(APIView):
@@ -96,9 +94,7 @@ class IssueDetailView(APIView):
         return Response(IssueSerializer(issue).data)
 
     def delete(self, request, workspace_id, issue_id):
-        services.delete_issue(
-            actor_membership=request.membership, issue_id=issue_id
-        )
+        services.delete_issue(actor_membership=request.membership, issue_id=issue_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -120,15 +116,10 @@ class IssueHistoryView(APIView):
     permission_classes = [HasWorkspaceContext]
 
     def get(self, request, workspace_id, issue_id):
-        issue = Issue.objects.filter(
-            workspace=request.workspace, id=issue_id
-        ).first()
+        issue = Issue.objects.filter(workspace=request.workspace, id=issue_id).first()
         if not issue:
             raise NotFound("Issue not found.")
-        history = (
-            issue.history.select_related("history_user")
-            .order_by("-history_date")[:100]
-        )
+        history = issue.history.select_related("history_user").order_by("-history_date")[:100]
         data = [
             {
                 "history_id": h.history_id,
@@ -150,9 +141,7 @@ class CommentListCreateView(APIView):
     permission_classes = [HasWorkspaceContext]
 
     def get(self, request, workspace_id, issue_id):
-        issue = Issue.objects.filter(
-            workspace=request.workspace, id=issue_id
-        ).first()
+        issue = Issue.objects.filter(workspace=request.workspace, id=issue_id).first()
         if not issue:
             raise NotFound("Issue not found.")
         comments = issue.comments.select_related("author").order_by("created_at")
@@ -166,18 +155,14 @@ class CommentListCreateView(APIView):
             issue_id=issue_id,
             body=ser.validated_data["body"],
         )
-        return Response(
-            CommentSerializer(comment).data, status=status.HTTP_201_CREATED
-        )
+        return Response(CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
 
 
 class CommentDeleteView(APIView):
     permission_classes = [HasWorkspaceContext]
 
     def delete(self, request, workspace_id, comment_id):
-        services.delete_comment(
-            actor_membership=request.membership, comment_id=comment_id
-        )
+        services.delete_comment(actor_membership=request.membership, comment_id=comment_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -185,9 +170,7 @@ class AttachmentListCreateView(APIView):
     permission_classes = [HasWorkspaceContext]
 
     def get(self, request, workspace_id, issue_id):
-        issue = Issue.objects.filter(
-            workspace=request.workspace, id=issue_id
-        ).first()
+        issue = Issue.objects.filter(workspace=request.workspace, id=issue_id).first()
         if not issue:
             raise NotFound("Issue not found.")
         return Response(AttachmentSerializer(issue.attachments.all(), many=True).data)
@@ -200,18 +183,14 @@ class AttachmentListCreateView(APIView):
             issue_id=issue_id,
             **ser.validated_data,
         )
-        return Response(
-            AttachmentSerializer(attachment).data, status=status.HTTP_201_CREATED
-        )
+        return Response(AttachmentSerializer(attachment).data, status=status.HTTP_201_CREATED)
 
 
 class AttachmentDeleteView(APIView):
     permission_classes = [HasWorkspaceContext]
 
     def delete(self, request, workspace_id, attachment_id):
-        services.delete_attachment(
-            actor_membership=request.membership, attachment_id=attachment_id
-        )
+        services.delete_attachment(actor_membership=request.membership, attachment_id=attachment_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -234,18 +213,14 @@ class SprintListCreateView(APIView):
             project_id=project_id,
             **ser.validated_data,
         )
-        return Response(
-            SprintSerializer(sprint).data, status=status.HTTP_201_CREATED
-        )
+        return Response(SprintSerializer(sprint).data, status=status.HTTP_201_CREATED)
 
 
 class SprintActivateView(APIView):
     permission_classes = [HasWorkspaceContext]
 
     def post(self, request, workspace_id, sprint_id):
-        sprint = services.activate_sprint(
-            actor_membership=request.membership, sprint_id=sprint_id
-        )
+        sprint = services.activate_sprint(actor_membership=request.membership, sprint_id=sprint_id)
         return Response(SprintSerializer(sprint).data)
 
 
@@ -253,11 +228,8 @@ class SprintCloseView(APIView):
     permission_classes = [HasWorkspaceContext]
 
     def post(self, request, workspace_id, sprint_id):
-        sprint = services.close_sprint(
-            actor_membership=request.membership, sprint_id=sprint_id
-        )
+        sprint = services.close_sprint(actor_membership=request.membership, sprint_id=sprint_id)
         return Response(SprintSerializer(sprint).data)
-
 
 
 class SprintDetailView(APIView):
@@ -266,17 +238,19 @@ class SprintDetailView(APIView):
     permission_classes = [HasWorkspaceContext]
 
     def get(self, request, workspace_id, sprint_id):
-        from datetime import date
-
-        sprint = Sprint.objects.filter(
-            workspace=request.workspace, id=sprint_id
-        ).select_related("project").first()
+        sprint = (
+            Sprint.objects.filter(workspace=request.workspace, id=sprint_id)
+            .select_related("project")
+            .first()
+        )
         if not sprint:
             raise NotFound("Sprint not found.")
 
-        issues = Issue.objects.filter(
-            workspace=request.workspace, sprint=sprint
-        ).select_related("assignee").order_by("order", "created_at")
+        issues = (
+            Issue.objects.filter(workspace=request.workspace, sprint=sprint)
+            .select_related("assignee")
+            .order_by("order", "created_at")
+        )
 
         by_status = {"todo": 0, "in_progress": 0, "review": 0, "done": 0}
         by_assignee: dict[str, dict] = {}
@@ -291,6 +265,7 @@ class SprintDetailView(APIView):
                 by_assignee[key]["completed"] += 1
 
         from apps.accounts.models import User
+
         assignee_ids = [k for k in by_assignee.keys() if k != "unassigned"]
         users = {
             str(u.id): {
@@ -336,46 +311,47 @@ class SprintDetailView(APIView):
         else:
             status = "active"
 
-        return Response({
-            "id": str(sprint.id),
-            "name": sprint.name,
-            "goal": sprint.goal or "",
-            "status": status,
-            "start_date": sprint.start_date,
-            "end_date": sprint.end_date,
-            "days_left": days_left,
-            "is_active": sprint.is_active,
-            "project_id": str(sprint.project_id),
-            "project_name": sprint.project.name,
-            "metrics": {
-                "total": total,
-                "done": done,
-                "remaining": total - done,
-                "completion_pct": round((done / total) * 100) if total else 0,
-                "points_total": total * 3,
-                "points_done": done * 3,
-            },
-            "status_breakdown": by_status,
-            "members": members,
-            "issues": [
-                {
-                    "id": str(i.id),
-                    "key": i.key,
-                    "title": i.title,
-                    "status": i.status,
-                    "priority": i.priority,
-                    "assignee_id": str(i.assignee_id) if i.assignee_id else None,
-                    "assignee_email": i.assignee.email if i.assignee else None,
-                }
-                for i in issues
-            ],
-        })
+        return Response(
+            {
+                "id": str(sprint.id),
+                "name": sprint.name,
+                "goal": sprint.goal or "",
+                "status": status,
+                "start_date": sprint.start_date,
+                "end_date": sprint.end_date,
+                "days_left": days_left,
+                "is_active": sprint.is_active,
+                "project_id": str(sprint.project_id),
+                "project_name": sprint.project.name,
+                "metrics": {
+                    "total": total,
+                    "done": done,
+                    "remaining": total - done,
+                    "completion_pct": round((done / total) * 100) if total else 0,
+                    "points_total": total * 3,
+                    "points_done": done * 3,
+                },
+                "status_breakdown": by_status,
+                "members": members,
+                "issues": [
+                    {
+                        "id": str(i.id),
+                        "key": i.key,
+                        "title": i.title,
+                        "status": i.status,
+                        "priority": i.priority,
+                        "assignee_id": str(i.assignee_id) if i.assignee_id else None,
+                        "assignee_email": i.assignee.email if i.assignee else None,
+                    }
+                    for i in issues
+                ],
+            }
+        )
 
     def delete(self, request, workspace_id, sprint_id):
-        services.delete_sprint(
-            actor_membership=request.membership, sprint_id=sprint_id
-        )
+        services.delete_sprint(actor_membership=request.membership, sprint_id=sprint_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class BoardReportView(APIView):
     permission_classes = [HasWorkspaceContext]
@@ -383,9 +359,7 @@ class BoardReportView(APIView):
     def get(self, request, workspace_id, board_id):
         _get_own_board(request, board_id)
 
-        issues = Issue.objects.filter(
-            workspace=request.workspace, board_id=board_id
-        )
+        issues = Issue.objects.filter(workspace=request.workspace, board_id=board_id)
 
         by_status: dict[str, int] = {}
         by_priority: dict[str, int] = {}
@@ -400,33 +374,31 @@ class BoardReportView(APIView):
             by_assignee[key] = by_assignee.get(key, 0) + 1
 
         assignee_ids = [k for k in by_assignee.keys() if k != "unassigned"]
-        assignee_lookup = {
-            str(u.id): u.email
-            for u in User.objects.filter(id__in=assignee_ids)
-        }
+        assignee_lookup = {str(u.id): u.email for u in User.objects.filter(id__in=assignee_ids)}
 
         total = issues.count()
         done = by_status.get("done", 0)
 
-        return Response({
-            "total": total,
-            "done": done,
-            "completion_pct": round((done / total) * 100) if total else 0,
-            "by_status": [
-                {"key": k, "label": k.replace("_", " ").title(), "count": v}
-                for k, v in by_status.items()
-            ],
-            "by_priority": [
-                {"key": k, "label": k.title(), "count": v}
-                for k, v in by_priority.items()
-            ],
-            "by_assignee": [
-                {
-                    "key": k,
-                    "email": assignee_lookup.get(k, "Unassigned"),
-                    "count": v,
-                }
-                for k, v in by_assignee.items()
-            ],
-            "by_column": by_column,
-        })
+        return Response(
+            {
+                "total": total,
+                "done": done,
+                "completion_pct": round((done / total) * 100) if total else 0,
+                "by_status": [
+                    {"key": k, "label": k.replace("_", " ").title(), "count": v}
+                    for k, v in by_status.items()
+                ],
+                "by_priority": [
+                    {"key": k, "label": k.title(), "count": v} for k, v in by_priority.items()
+                ],
+                "by_assignee": [
+                    {
+                        "key": k,
+                        "email": assignee_lookup.get(k, "Unassigned"),
+                        "count": v,
+                    }
+                    for k, v in by_assignee.items()
+                ],
+                "by_column": by_column,
+            }
+        )

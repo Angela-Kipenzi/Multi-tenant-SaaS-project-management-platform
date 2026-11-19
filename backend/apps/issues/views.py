@@ -3,7 +3,7 @@ from __future__ import annotations
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from datetime import date
 from apps.accounts.models import User
 from apps.boards.models import Board
 from apps.projects.models import Project
@@ -259,17 +259,123 @@ class SprintCloseView(APIView):
         return Response(SprintSerializer(sprint).data)
 
 
-class SprintDeleteView(APIView):
+
+class SprintDetailView(APIView):
+    """GET: sprint detail with metrics. DELETE: remove sprint. Same URL."""
+
     permission_classes = [HasWorkspaceContext]
+
+    def get(self, request, workspace_id, sprint_id):
+        from datetime import date
+
+        sprint = Sprint.objects.filter(
+            workspace=request.workspace, id=sprint_id
+        ).select_related("project").first()
+        if not sprint:
+            raise NotFound("Sprint not found.")
+
+        issues = Issue.objects.filter(
+            workspace=request.workspace, sprint=sprint
+        ).select_related("assignee").order_by("order", "created_at")
+
+        by_status = {"todo": 0, "in_progress": 0, "review": 0, "done": 0}
+        by_assignee: dict[str, dict] = {}
+
+        for issue in issues:
+            by_status[issue.status] = by_status.get(issue.status, 0) + 1
+            key = str(issue.assignee_id) if issue.assignee_id else "unassigned"
+            if key not in by_assignee:
+                by_assignee[key] = {"assigned": 0, "completed": 0}
+            by_assignee[key]["assigned"] += 1
+            if issue.status == "done":
+                by_assignee[key]["completed"] += 1
+
+        from apps.accounts.models import User
+        assignee_ids = [k for k in by_assignee.keys() if k != "unassigned"]
+        users = {
+            str(u.id): {
+                "id": str(u.id),
+                "email": u.email,
+                "display_name": u.display_name,
+                "initials": u.initials,
+            }
+            for u in User.objects.filter(id__in=assignee_ids)
+        }
+        members = [
+            {
+                "user": users.get(
+                    k,
+                    {
+                        "id": k,
+                        "email": "Unassigned",
+                        "display_name": "Unassigned",
+                        "initials": "?",
+                    },
+                ),
+                "assigned": v["assigned"],
+                "completed": v["completed"],
+            }
+            for k, v in by_assignee.items()
+        ]
+
+        today = date.today()
+        days_left = None
+        if sprint.end_date:
+            days_left = (sprint.end_date - today).days
+
+        total = len(issues)
+        done = by_status.get("done", 0)
+
+        if not sprint.is_active:
+            if sprint.end_date and sprint.end_date < today and done < total:
+                status = "overdue"
+            elif total > 0 and done == total:
+                status = "completed"
+            else:
+                status = "planned"
+        else:
+            status = "active"
+
+        return Response({
+            "id": str(sprint.id),
+            "name": sprint.name,
+            "goal": sprint.goal or "",
+            "status": status,
+            "start_date": sprint.start_date,
+            "end_date": sprint.end_date,
+            "days_left": days_left,
+            "is_active": sprint.is_active,
+            "project_id": str(sprint.project_id),
+            "project_name": sprint.project.name,
+            "metrics": {
+                "total": total,
+                "done": done,
+                "remaining": total - done,
+                "completion_pct": round((done / total) * 100) if total else 0,
+                "points_total": total * 3,
+                "points_done": done * 3,
+            },
+            "status_breakdown": by_status,
+            "members": members,
+            "issues": [
+                {
+                    "id": str(i.id),
+                    "key": i.key,
+                    "title": i.title,
+                    "status": i.status,
+                    "priority": i.priority,
+                    "assignee_id": str(i.assignee_id) if i.assignee_id else None,
+                    "assignee_email": i.assignee.email if i.assignee else None,
+                }
+                for i in issues
+            ],
+        })
 
     def delete(self, request, workspace_id, sprint_id):
         services.delete_sprint(
             actor_membership=request.membership, sprint_id=sprint_id
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-from apps.accounts.models import User
-
 
 class BoardReportView(APIView):
     permission_classes = [HasWorkspaceContext]

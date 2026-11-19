@@ -7,7 +7,9 @@ import { CommentsSection } from "@/features/comments/CommentsSection";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useAuthStore } from "@/store/authStore";
 import { listMembers } from "@/services/workspaces";
-import type { Member } from "@/services/workspaces";
+import { listSprints } from "@/services/sprints";
+import type { Member } from "@/types/api";
+import type { Sprint } from "@/types/api";
 import type { IssuePriority } from "@/types/api";
 import {
   useDeleteIssue,
@@ -31,25 +33,35 @@ export const IssueDetailModal = ({ issueId, boardId, onClose }: Props) => {
   const deleteMutation = useDeleteIssue(boardId);
 
   const [members, setMembers] = useState<Member[]>([]);
+  const [sprints, setSprints] = useState<Sprint[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<IssuePriority>("medium");
   const [assigneeId, setAssigneeId] = useState<string | null>(null);
+  const [sprintId, setSprintId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
 
+  // Load issue data into form state
   useEffect(() => {
     if (!issue) return;
     setTitle(issue.title);
     setDescription(issue.description);
     setPriority(issue.priority);
     setAssigneeId(issue.assignee);
+    setSprintId(issue.sprint);
     setDirty(false);
   }, [issue]);
 
+  // Load members and sprints
   useEffect(() => {
     if (!issueId) return;
-    listMembers().then(setMembers).catch(() => {});
+    listMembers().then(setMembers).catch(() => { });
   }, [issueId]);
+
+  useEffect(() => {
+    if (!issue) return;
+    listSprints(issue.project).then(setSprints).catch(() => { });
+  }, [issue?.project]);
 
   const canEdit = role === "owner" || role === "admin" || issue?.assignee === user?.id;
   const canDelete = role === "owner" || role === "admin";
@@ -63,21 +75,16 @@ export const IssueDetailModal = ({ issueId, boardId, onClose }: Props) => {
         description,
         priority,
         assigneeId,
+        sprintId,
       },
-      {
-        onSuccess: () => {
-          setDirty(false);
-        },
-      }
+      { onSuccess: () => setDirty(false) }
     );
   };
 
   const onDelete = () => {
     if (!issue) return;
     if (!window.confirm("Delete this issue? This cannot be undone.")) return;
-    deleteMutation.mutate(issue.id, {
-      onSuccess: () => onClose(),
-    });
+    deleteMutation.mutate(issue.id, { onSuccess: () => onClose() });
   };
 
   return (
@@ -101,11 +108,7 @@ export const IssueDetailModal = ({ issueId, boardId, onClose }: Props) => {
             Close
           </Button>
           {canEdit && (
-            <Button
-              onClick={onSave}
-              loading={updateMutation.isPending}
-              disabled={!dirty}
-            >
+            <Button onClick={onSave} loading={updateMutation.isPending} disabled={!dirty}>
               Save changes
             </Button>
           )}
@@ -190,17 +193,35 @@ export const IssueDetailModal = ({ issueId, boardId, onClose }: Props) => {
             </div>
           </div>
 
+          {/* Sprint selector — the new field */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              Sprint
+            </label>
+            <select
+              className="input"
+              value={sprintId ?? ""}
+              onChange={(e) => {
+                setSprintId(e.target.value || null);
+                setDirty(true);
+              }}
+              disabled={!canEdit}
+            >
+              <option value="">Backlog (no sprint)</option>
+              {sprints.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                  {s.is_active ? " (active)" : ""}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-slate-500">
+              Moving an issue into an active sprint includes it in that sprint's
+              metrics.
+            </p>
+          </div>
+
           <div className="border-t border-slate-200 pt-4">
-            <div className="mb-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
-              <div>
-                <span className="font-medium">Reporter:</span>{" "}
-                {issue.reporter ? "a user" : "—"}
-              </div>
-              <div>
-                <span className="font-medium">Created:</span>{" "}
-                {new Date(issue.created_at).toLocaleDateString()}
-              </div>
-            </div>
             <CommentsSection issueId={issue.id} />
           </div>
         </div>

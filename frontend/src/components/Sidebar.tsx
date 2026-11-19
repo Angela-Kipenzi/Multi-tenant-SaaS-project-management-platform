@@ -114,8 +114,7 @@ export const Sidebar = () => {
       <nav className="flex-1 overflow-y-auto px-3 py-2">
         <div className="space-y-1">
           <NavLink
-            to="/projects"
-            end
+            to="/overview"
             className={({ isActive }) => `${navItem} ${isActive ? navItemActive : ""}`}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

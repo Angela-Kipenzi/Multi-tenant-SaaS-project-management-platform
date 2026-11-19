@@ -1,14 +1,7 @@
 import { api, getCurrentWorkspaceId } from "@/lib/api";
+import type { Sprint, SprintDetail } from "@/types/api";
 
-export interface Sprint {
-  id: string;
-  name: string;
-  project: string;
-  start_date: string | null;
-  end_date: string | null;
-  is_active: boolean;
-  created_at: string;
-}
+
 
 export const listSprints = async (projectId: string): Promise<Sprint[]> => {
   const wsId = getCurrentWorkspaceId();
@@ -55,4 +48,14 @@ export const closeSprint = async (sprintId: string): Promise<Sprint> => {
 export const deleteSprint = async (sprintId: string): Promise<void> => {
   const wsId = getCurrentWorkspaceId();
   await api.delete(`/workspaces/${wsId}/sprints/${sprintId}/`);
+};
+
+export const getSprintDetail = async (
+  sprintId: string
+): Promise<SprintDetail> => {
+  const wsId = getCurrentWorkspaceId();
+  const r = await api.get<SprintDetail>(
+    `/workspaces/${wsId}/sprints/${sprintId}/`
+  );
+  return r.data;
 };

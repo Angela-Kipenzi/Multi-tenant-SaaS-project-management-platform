@@ -1,12 +1,5 @@
 import { api, getCurrentWorkspaceId } from "@/lib/api";
-import type { Role } from "@/types/api";
-
-export interface Member {
-  id: string;
-  user: { id: string; email: string };
-  role: Role;
-  created_at: string;
-}
+import type { Member, Role } from "@/types/api";
 
 export const listMembers = async (): Promise<Member[]> => {
   const wsId = getCurrentWorkspaceId();

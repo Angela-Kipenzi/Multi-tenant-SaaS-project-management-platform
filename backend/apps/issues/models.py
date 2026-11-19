@@ -14,6 +14,7 @@ class Sprint(TenantModel):
         "projects.Project", on_delete=models.CASCADE, related_name="sprints"
     )
     name = models.CharField(max_length=120)
+    goal = models.TextField(blank=True, default="")
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     is_active = models.BooleanField(default=False)

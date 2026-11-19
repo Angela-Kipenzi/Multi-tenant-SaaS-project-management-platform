@@ -15,6 +15,7 @@ import { MembersPage } from "@/features/members/MembersPage";
 import { RegisterPage } from "./features/auth/RestigerPage";
 import { MyTasksPage } from "./features/my-tasks/MyTasksPage";
 import { OverviewPage } from "./features/overview/OverviewPage";
+import { SprintDetailsPage } from "./features/sprints/SprintDetailPage";
 
 const App = () => {
   const { user, initialized, setAuth, clearAuth, setInitialized } = useAuthStore();
@@ -64,6 +65,10 @@ const App = () => {
           <Route path="/members" element={<MembersPage />} />
           <Route path="/overview" element={<OverviewPage />} />
           <Route path="/my-tasks" element={<MyTasksPage />} />
+          <Route
+            path="/projects/:projectId/sprints/:sprintId"
+            element={<SprintDetailsPage />}
+          />
         </Route>
       </Route>
 

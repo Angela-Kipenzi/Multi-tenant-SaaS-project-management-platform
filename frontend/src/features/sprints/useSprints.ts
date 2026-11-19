@@ -22,13 +22,26 @@ export const useSprints = (projectId: string) =>
 export const useCreateSprint = (projectId: string) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: { name: string; startDate?: string | null; endDate?: string | null }) =>
-      createSprint({ projectId, ...args }),
+    mutationFn: (args: {
+      name: string;
+      goal?: string;
+      startDate?: string | null;
+      endDate?: string | null;
+    }) => createSprint({ projectId, ...args }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: sprintKeys.forProject(projectId) });
       toast("Sprint created.", "success");
     },
-    onError: () => toast("Couldn't create sprint.", "error"),
+    onError: (err: any) => {
+      const detail = err?.response?.data?.detail;
+      const code = err?.response?.data?.code;
+      toast(
+        code === "sprint_name_taken"
+          ? "A sprint with that name already exists."
+          : detail ?? "Couldn't create sprint.",
+        "error"
+      );
+    },
   });
 };
 

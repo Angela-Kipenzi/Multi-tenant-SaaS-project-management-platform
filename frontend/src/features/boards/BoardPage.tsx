@@ -22,6 +22,7 @@ import type { Filters} from "@/types/api";
 import { useBoards, useCreateBoard, useUpdateBoard } from "./useBoards";
 import { TimelineView } from "@/features/timeline/TimelineView";
 import { ReportsView } from "@/features/reports/ReportsView";
+import { BackButton } from "@/components/BackButton";
 
 export const BoardPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -136,6 +137,9 @@ export const BoardPage = () => {
     >
       {board && (
         <>
+          <div className="mb-4">
+            <BackButton />
+          </div>
           <BoardHeader
             board={board}
             issues={issues}

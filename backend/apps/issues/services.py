@@ -29,7 +29,7 @@ def _enqueue(fn, **kwargs) -> None:
         _logger.exception("Failed to enqueue %s: %s", fn.name, exc)
 
 def create_sprint(
-    *, actor_membership: WorkspaceMembership, project_id, name: str,
+    *, actor_membership: WorkspaceMembership, project_id, name: str, goal: str = "",
     start_date=None, end_date=None,
 ) -> Sprint:
     if not has_capability(actor_membership.role, "board.create"):
@@ -139,16 +139,33 @@ def create_issue(
     )
 
 def update_issue(
-    *, actor_membership: WorkspaceMembership, issue_id,
-    title: str | None = None, description: str | None = None,
-    priority: str | None = None, assignee_id=None, sprint_id=None,
+    *,
+    actor_membership: WorkspaceMembership,
+    issue_id,
+    title: str | None = None,
+    description: str | None = None,
+    priority: str | None = None,
+    assignee_id=None,
+    sprint_id=None,
 ) -> Issue:
     workspace = actor_membership.workspace
     issue = Issue.objects.filter(workspace=workspace, id=issue_id).first()
     if not issue:
         raise NotFound("Issue not found.")
 
-    # Field-level permission: only assignee can update own; admins can update any.
+    is_assignee = issue.assignee_id == actor_membership.user_id
+    can_update_any = has_capability(actor_membership.role, "issue.update_any")
+    if not (can_update_any or is_assignee):
+        raise Forbidden("Role cannot update this issue.")
+
+    if assignee_id is not None and not can_update_any:
+        raise Forbidden("Only admins can reassign issues.")
+
+    if assignee_id is not None and assignee_id != "":
+        from apps.accounts.models import WorkspaceMembership as WM
+        if not WM.objects.filter(workspace=workspace, user_id=assignee_id).exists():
+            raise NotFound("Assignee not found.")
+
     previous_assignee_id = issue.assignee_id
 
     if title is not None:
@@ -158,21 +175,36 @@ def update_issue(
     if priority is not None:
         issue.priority = priority
     if assignee_id is not None:
-        issue.assignee_id = assignee_id
+        # Empty string means "unassign"
+        issue.assignee_id = assignee_id if assignee_id != "" else None
+
+    # Sprint assignment — this is the bug fix
     if sprint_id is not None:
-        issue.sprint_id = sprint_id
+        if sprint_id == "" or sprint_id is None:
+            issue.sprint = None
+        else:
+            if not Sprint.objects.filter(
+                workspace=workspace, project_id=issue.project_id, id=sprint_id
+            ).exists():
+                raise NotFound("Sprint not found on this project.")
+            issue.sprint_id = sprint_id
+
     issue.save()
 
-    if assignee_id is not None and assignee_id != previous_assignee_id:
-        _enqueue(
-            notify_assignment,
+    if assignee_id is not None and assignee_id != "" and assignee_id != previous_assignee_id:
+        notify_assignment.delay(
             user_id=str(assignee_id),
             workspace_id=str(workspace.id),
             issue_id=str(issue.id),
             actor_id=str(actor_membership.user_id),
-            )
-        return issue
+        )
 
+    # Re-fetch with select_related so the serializer gets fresh assignee info
+    return (
+        Issue.objects.filter(id=issue.id)
+        .select_related("assignee", "reporter", "sprint", "column")
+        .first()
+    )
 
 def move_issue(
     *, actor_membership: WorkspaceMembership, issue_id,
@@ -228,6 +260,22 @@ def move_issue(
             _shift_target_column(workspace, target_column.id, target_order)
 
         issue.column = target_column
+
+        # Sync issue.status to match the target column's meaning.
+        # The Kanban column is the visual truth; status is what reports and
+        # sprint metrics read. Keeping them in sync prevents "done card, todo
+        # status" bugs.
+        column_name_lower = target_column.name.lower()
+        if "done" in column_name_lower or "complete" in column_name_lower:
+            issue.status = "done"
+        elif "review" in column_name_lower:
+            issue.status = "review"
+        elif "progress" in column_name_lower or "doing" in column_name_lower:
+            issue.status = "in_progress"
+        elif "todo" in column_name_lower or "backlog" in column_name_lower:
+            issue.status = "todo"
+        # else: leave status alone if column name doesn't match a known pattern
+
         issue.order = target_order
         issue.save()
         return issue

@@ -8,7 +8,7 @@ from .models import Attachment, Comment, Issue, Sprint
 class SprintSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sprint
-        fields = ("id", "name", "project", "start_date", "end_date", "is_active",
+        fields = ("id", "name", "goal", "project", "start_date", "end_date", "is_active",
                   "created_at")
         read_only_fields = ("id", "project", "created_at")
 

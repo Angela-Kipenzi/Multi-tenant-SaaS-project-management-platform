@@ -22,6 +22,13 @@ export interface Workspace {
   updated_at: string;
 }
 
+export interface Member {
+  id: string;
+  user: { id: string; email: string };
+  role: Role;
+  created_at: string;
+}
+
 export interface Membership {
   workspace: Workspace;
   role: Role;
@@ -103,4 +110,71 @@ export interface BoardReport {
   by_priority: ReportBucket[];
   by_assignee: ReportAssigneeBucket[];
   by_column: Record<string, number>;
+}
+
+export interface Sprint {
+  id: string;
+  name: string;
+  goal: string;
+  project: string;
+  start_date: string | null;
+  end_date: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export type SprintStatus = "planned" | "active" | "completed" | "overdue";
+
+export interface SprintMetrics {
+  total: number;
+  done: number;
+  remaining: number;
+  completion_pct: number;
+  points_total: number;
+  points_done: number;
+}
+
+export interface SprintStatusBreakdown {
+  todo: number;
+  in_progress: number;
+  review: number;
+  done: number;
+}
+
+export interface SprintMemberContribution {
+  user: {
+    id: string;
+    email: string;
+    display_name: string;
+    initials: string;
+  };
+  assigned: number;
+  completed: number;
+}
+
+export interface SprintIssueBrief {
+  id: string;
+  key: string;
+  title: string;
+  status: IssueStatus;
+  priority: IssuePriority;
+  assignee_id: string | null;
+  assignee_email: string | null;
+}
+
+export interface SprintDetail {
+  id: string;
+  name: string;
+  goal: string;
+  status: SprintStatus;
+  start_date: string | null;
+  end_date: string | null;
+  days_left: number | null;
+  is_active: boolean;
+  project_id: string;
+  project_name: string;
+  metrics: SprintMetrics;
+  status_breakdown: SprintStatusBreakdown;
+  members: SprintMemberContribution[];
+  issues: SprintIssueBrief[];
 }

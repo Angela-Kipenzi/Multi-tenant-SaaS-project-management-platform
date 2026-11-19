@@ -12,12 +12,10 @@ These tests are non-negotiable. New endpoints without a test here will not merge
 
 import pytest
 
-from apps.boards.models import Board
-from apps.projects.models import Project
 from tests.factories.accounts import OwnerMembershipFactory, WorkspaceFactory
 from tests.factories.boards import BoardFactory, ColumnFactory
-from tests.factories.projects import ProjectFactory
 from tests.factories.issues import IssueFactory
+from tests.factories.projects import ProjectFactory
 
 pytestmark = pytest.mark.django_db
 

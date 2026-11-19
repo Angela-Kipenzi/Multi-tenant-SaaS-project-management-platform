@@ -82,3 +82,25 @@ export interface Issue {
   created_at: string;
   updated_at: string;
 }
+
+export interface ReportBucket {
+  key: string;
+  label: string;
+  count: number;
+}
+
+export interface ReportAssigneeBucket {
+  key: string;
+  email: string;
+  count: number;
+}
+
+export interface BoardReport {
+  total: number;
+  done: number;
+  completion_pct: number;
+  by_status: ReportBucket[];
+  by_priority: ReportBucket[];
+  by_assignee: ReportAssigneeBucket[];
+  by_column: Record<string, number>;
+}

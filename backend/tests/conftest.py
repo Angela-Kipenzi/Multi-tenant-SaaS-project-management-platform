@@ -2,7 +2,10 @@ import pytest
 from rest_framework.test import APIClient
 
 from tests.factories.accounts import (
-    MembershipFactory, OwnerMembershipFactory, UserFactory, WorkspaceFactory,
+    MembershipFactory,
+    OwnerMembershipFactory,
+    UserFactory,
+    WorkspaceFactory,
 )
 
 

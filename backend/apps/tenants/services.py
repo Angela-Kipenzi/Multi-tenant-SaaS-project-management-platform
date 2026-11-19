@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from django.db import transaction
 
-from apps.accounts.models import User, WorkspaceMembership
-from apps.accounts.roles import Role, has_capability
-from common.exceptions import Conflict, Forbidden
+from apps.accounts.models import WorkspaceMembership
+from apps.accounts.roles import has_capability
+from common.exceptions import Forbidden
 
 from .models import Workspace
 

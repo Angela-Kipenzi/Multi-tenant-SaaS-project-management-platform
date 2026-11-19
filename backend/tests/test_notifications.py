@@ -8,7 +8,6 @@ from tests.factories.boards import BoardFactory, ColumnFactory
 from tests.factories.issues import IssueFactory
 from tests.factories.projects import ProjectFactory
 
-
 pytestmark = pytest.mark.django_db
 
 

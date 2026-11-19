@@ -11,7 +11,6 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from . import services
 from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
 
-
 REFRESH_COOKIE = "refresh_token"
 
 

@@ -20,6 +20,8 @@ import { listMembers } from "@/services/workspaces";
 import type { Board,  Issue, Project } from "@/types/api";
 import type { Filters} from "@/types/api";
 import { useBoards, useCreateBoard, useUpdateBoard } from "./useBoards";
+import { TimelineView } from "@/features/timeline/TimelineView";
+import { ReportsView } from "@/features/reports/ReportsView";
 
 export const BoardPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -158,19 +160,30 @@ export const BoardPage = () => {
           </div>
 
           <div className="mt-6">
-            {viewMode === "board" ? (
+            {viewMode === "board" && (
               <KanbanBoard
                 board={board}
                 issuesOverride={filteredIssues}
                 onIssueClick={(issue: Issue) => setDetailIssueId(issue.id)}
                 onAddIssue={(columnId) => setCreateColumnId(columnId)}
               />
-            ) : (
+            )}
+
+            {viewMode === "list" && (
               <ListView
                 issues={filteredIssues}
                 onIssueClick={(issue) => setDetailIssueId(issue.id)}
               />
             )}
+
+            {viewMode === "timeline" && (
+              <TimelineView
+                board={board}
+                onIssueClick={(issue) => setDetailIssueId(issue.id)}
+              />
+            )}
+
+            {viewMode === "reports" && <ReportsView boardId={board.id} />}
           </div>
 
           <CreateIssueModal

@@ -1,6 +1,8 @@
 """Audit log writer. Append-only by DB trigger (Phase E)."""
 from __future__ import annotations
+
 from typing import Any
+
 
 # Implemented in Phase E — this is the stable signature services will call.
 def record_audit(

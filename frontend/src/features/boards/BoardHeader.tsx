@@ -5,7 +5,7 @@ import { FilterPopover } from "@/features/kanban/FilterPopover";
 import type { Filters } from "@/features/kanban/FilterPopover";
 import type { Board, Issue } from "@/types/api";
 
-export type ViewMode = "board" | "list";
+export type ViewMode = "board" | "list" | "timeline" | "reports";
 
 interface Props {
   board: Board | null;
@@ -239,16 +239,20 @@ export const BoardHeader = ({
           List
         </button>
         <button
-          disabled
-          className="cursor-not-allowed -mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-400"
-          title="Coming soon"
+          onClick={() => onViewModeChange("timeline")}
+          className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition ${viewMode === "timeline"
+              ? "border-brand-600 text-slate-900"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+            }`}
         >
           Timeline
         </button>
         <button
-          disabled
-          className="cursor-not-allowed -mb-px border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-400"
-          title="Coming soon"
+          onClick={() => onViewModeChange("reports")}
+          className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition ${viewMode === "reports"
+              ? "border-brand-600 text-slate-900"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+            }`}
         >
           Reports
         </button>

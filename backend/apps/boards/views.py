@@ -4,15 +4,18 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.projects.models import Project
-from common.exceptions import Conflict, NotFound, Forbidden, DomainError
-from common.permissions import HasWorkspaceContext
 from apps.accounts.roles import has_capability
+from apps.projects.models import Project
+from common.exceptions import Conflict, DomainError, Forbidden, NotFound
+from common.permissions import HasWorkspaceContext
 
 from . import services
 from .models import Board
 from .serializers import (
-    BoardCreateSerializer, BoardSerializer, BoardUpdateSerializer, ColumnReorderSerializer,
+    BoardCreateSerializer,
+    BoardSerializer,
+    BoardUpdateSerializer,
+    ColumnReorderSerializer,
 )
 
 

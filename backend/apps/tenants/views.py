@@ -6,7 +6,6 @@ from rest_framework.views import APIView
 
 from apps.accounts import services as account_services
 from apps.accounts.models import WorkspaceMembership
-from apps.accounts.serializers import MembershipSerializer
 from common.permissions import HasWorkspaceContext
 
 from . import services

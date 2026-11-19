@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import stripe
 from django.conf import settings
 from django.db import transaction
-from datetime import datetime, timezone as dt_timezone
-from django.utils import timezone
+
 from apps.accounts.models import WorkspaceMembership
 from apps.accounts.roles import has_capability
 from apps.tenants.models import Plan, Workspace
@@ -92,7 +93,7 @@ def handle_checkout_completed(event: dict) -> None:
             "stripe_price_id": stripe_sub["items"]["data"][0]["price"]["id"],
             "status": Subscription.Status.ACTIVE,
             "current_period_end": datetime.fromtimestamp(
-                stripe_sub["current_period_end"], tz=dt_timezone.utc
+                stripe_sub["current_period_end"], tz=UTC
             ),
         },
     )
@@ -122,7 +123,7 @@ def handle_subscription_updated(event: dict) -> None:
     ).update(
         status=status,
         current_period_end=datetime.fromtimestamp(
-            sub["current_period_end"], tz=dt_timezone.utc
+            sub["current_period_end"], tz=UTC
         ),
         cancel_at_period_end=sub.get("cancel_at_period_end", False),
     )

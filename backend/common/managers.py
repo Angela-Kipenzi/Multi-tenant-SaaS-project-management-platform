@@ -5,8 +5,9 @@ Design goal: make `Model.objects.filter(...)` on tenant-scoped models
 REQUIRE a workspace_id in the filter, or raise. Fails loud, not silent.
 """
 from __future__ import annotations
-from django.db import models
+
 from django.core.exceptions import ImproperlyConfigured
+from django.db import models
 
 
 class MissingTenantFilter(ImproperlyConfigured):

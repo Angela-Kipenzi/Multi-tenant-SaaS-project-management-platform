@@ -1,9 +1,15 @@
 """DRF exception handler — converts domain errors to stable API shapes."""
 from __future__ import annotations
+
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_handler
+
 from .exceptions import (
-    DomainError, NotFound, Forbidden, Conflict, PlanLimitExceeded,
+    Conflict,
+    DomainError,
+    Forbidden,
+    NotFound,
+    PlanLimitExceeded,
 )
 
 

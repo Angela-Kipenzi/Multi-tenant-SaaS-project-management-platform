@@ -1,5 +1,6 @@
-from .base import *  # noqa: F401,F403
 import os
+
+from .base import *  # noqa: F401,F403
 
 DEBUG = True
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")

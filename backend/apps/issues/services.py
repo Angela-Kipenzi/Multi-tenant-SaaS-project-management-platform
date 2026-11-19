@@ -1,25 +1,19 @@
 from __future__ import annotations
 
-from django.db import transaction
+import logging
+from datetime import datetime
+
+from django.db import models, transaction
 
 from apps.accounts.models import WorkspaceMembership
 from apps.accounts.roles import has_capability
 from apps.boards.models import Board, Column
+from apps.notifications.tasks import notify_assignment, notify_comment
 from apps.projects.models import Project
-from common.exceptions import Conflict, Forbidden, NotFound, DomainError
+from common.exceptions import Conflict, DomainError, Forbidden, NotFound
 
-from .models import Issue, Sprint, Comment, Attachment
+from .models import Attachment, Comment, Issue, Sprint
 from .sequence import next_issue_number
-
-from datetime import datetime
-from django.db import transaction
-from django.utils import timezone
-from common.exceptions import Conflict, Forbidden, NotFound
-from django.db import models
-from apps.notifications.tasks import notify_assignment
-from apps.notifications.tasks import notify_comment
-
-import logging
 
 _logger = logging.getLogger(__name__)
 
@@ -331,7 +325,6 @@ def create_comment(
     )
 
     # Notify the assignee and reporter (if any, and if not the commenter).
-    from apps.notifications.tasks import notify_comment
 
     recipients = set()
     if issue.assignee_id and issue.assignee_id != actor_membership.user_id:
@@ -348,8 +341,7 @@ def create_comment(
             actor_id=str(actor_membership.user_id),
             preview=body,
         )
-
-    return comment
+        return comment
 
 
 def delete_comment(

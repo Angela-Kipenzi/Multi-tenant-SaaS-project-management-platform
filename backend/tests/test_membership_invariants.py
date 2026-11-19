@@ -6,7 +6,6 @@ from apps.accounts.roles import Role
 from common.exceptions import Conflict, Forbidden, PlanLimitExceeded
 from tests.factories.accounts import MembershipFactory, UserFactory
 
-
 pytestmark = pytest.mark.django_db
 
 

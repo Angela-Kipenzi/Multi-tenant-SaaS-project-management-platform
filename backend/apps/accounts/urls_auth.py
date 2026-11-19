@@ -1,7 +1,11 @@
 from django.urls import path
 
 from .views_auth import (
-    CookieRefreshView, LoginView, LogoutView, MeView, RegisterView,
+    CookieRefreshView,
+    LoginView,
+    LogoutView,
+    MeView,
+    RegisterView,
 )
 
 urlpatterns = [

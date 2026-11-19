@@ -1,16 +1,13 @@
 import json
-from datetime import datetime, timezone as dt_tz
+from unittest.mock import patch
 
 import pytest
-from django.conf import settings
-from unittest.mock import patch
 
 from apps.billing import services
 from apps.billing.models import Subscription
 from apps.tenants.models import Plan
 from common.exceptions import Forbidden, NotFound
-from tests.factories.accounts import MembershipFactory, OwnerMembershipFactory
-
+from tests.factories.accounts import MembershipFactory
 
 pytestmark = pytest.mark.django_db
 

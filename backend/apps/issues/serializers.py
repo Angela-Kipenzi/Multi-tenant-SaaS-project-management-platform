@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from .models import Comment, Issue, Sprint, Attachment
+from .models import Attachment, Comment, Issue, Sprint
 
 
 class SprintSerializer(serializers.ModelSerializer):

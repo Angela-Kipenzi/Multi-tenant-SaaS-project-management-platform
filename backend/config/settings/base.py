@@ -3,9 +3,10 @@ Base settings — no environment-specific values here.
 Everything is read from environment variables with safe dev defaults.
 """
 from __future__ import annotations
+
+import os
 from datetime import timedelta
 from pathlib import Path
-import os
 
 from dotenv import load_dotenv
 

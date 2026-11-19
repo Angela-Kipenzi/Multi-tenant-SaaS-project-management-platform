@@ -13,7 +13,6 @@ from common.exceptions import Conflict, DomainError, Forbidden, NotFound, PlanLi
 from .models import Invitation, User, WorkspaceMembership
 from .roles import Role, has_capability, rank
 
-
 INVITATION_TTL = timedelta(days=7)
 
 

@@ -2,12 +2,11 @@ import pytest
 
 from apps.issues import services
 from apps.issues.models import Comment
-from common.exceptions import Forbidden, NotFound
-from tests.factories.accounts import MembershipFactory, OwnerMembershipFactory
+from common.exceptions import Forbidden
+from tests.factories.accounts import MembershipFactory
 from tests.factories.boards import BoardFactory, ColumnFactory
 from tests.factories.issues import IssueFactory
 from tests.factories.projects import ProjectFactory
-
 
 pytestmark = pytest.mark.django_db
 

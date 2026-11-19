@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-from django.db import transaction
-
 from apps.accounts.models import WorkspaceMembership
 from apps.accounts.roles import has_capability
-from apps.tenants.models import Workspace
 from common.exceptions import Conflict, Forbidden, NotFound, PlanLimitExceeded
 
 from .models import Project

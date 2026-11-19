@@ -1,14 +1,14 @@
-import pytest
 from datetime import timedelta
+
+import pytest
 
 from apps.issues import services
 from apps.issues.models import Issue
-from common.exceptions import Conflict, Forbidden, NotFound
-from tests.factories.accounts import MembershipFactory, OwnerMembershipFactory
+from common.exceptions import Conflict, Forbidden
+from tests.factories.accounts import MembershipFactory
 from tests.factories.boards import BoardFactory, ColumnFactory
 from tests.factories.issues import IssueFactory
 from tests.factories.projects import ProjectFactory
-
 
 pytestmark = pytest.mark.django_db
 
@@ -124,7 +124,6 @@ def test_delete_issue_soft_deletes(owner):
 
 
 def test_member_cannot_delete_issue(owner):
-    from common.exceptions import Forbidden
     member = MembershipFactory(workspace=owner.workspace, role="member")
     project = ProjectFactory(workspace=owner.workspace)
     board = BoardFactory(workspace=owner.workspace, project=project)

@@ -30,8 +30,31 @@ export const LoginPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold text-slate-900">SaaS PM</h1>
-          <p className="mt-1 text-sm text-slate-500">Sign in to your workspace</p>
+          <div className="flex items-center justify-center gap-2">
+            <svg
+              className="h-8 w-8"
+              viewBox="0 0 40 40"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10 10 L20 10 L28 18 L28 22 L24 22 L16 14 L10 14 Z"
+                fill="#3b82f6"
+              />
+              <path
+                d="M6 18 L16 18 L24 26 L24 30 L20 30 L12 22 L6 22 Z"
+                fill="#2563eb"
+              />
+              <path
+                d="M4 26 L14 26 L22 34 L22 38 L18 38 L10 30 L4 30 Z"
+                fill="#1e40af"
+              />
+            </svg>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              FlowForge
+            </h1>
+          </div>
+          <p className="mt-2 text-sm text-slate-500">Sign in to your workspace</p>
         </div>
 
         <form onSubmit={onSubmit} className="card space-y-4 p-6">

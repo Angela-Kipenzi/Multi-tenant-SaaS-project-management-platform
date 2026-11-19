@@ -60,17 +60,34 @@ export const TopBar = ({ crumbs = [], onToggleSidebar, sidebarOpen }: TopBarProp
       <div className="flex items-center gap-3">
         {/* Logo */}
         <Link to="/projects" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 2L2 7l8 5 8-5-8-5zM2 17l8 5 8-5V9l-8 5-8-5v8z" />
-            </svg>
-          </div>
-          <span className="hidden text-base font-semibold text-slate-900 md:inline">
-            Northstar
+          <svg
+            className="h-8 w-8"
+            viewBox="0 0 40 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {/* Top chevron — lighter blue */}
+            <path
+              d="M10 10 L20 10 L28 18 L28 22 L24 22 L16 14 L10 14 Z"
+              fill="#3b82f6"
+            />
+            {/* Middle chevron — medium blue */}
+            <path
+              d="M6 18 L16 18 L24 26 L24 30 L20 30 L12 22 L6 22 Z"
+              fill="#2563eb"
+            />
+            {/* Bottom chevron — dark blue */}
+            <path
+              d="M4 26 L14 26 L22 34 L22 38 L18 38 L10 30 L4 30 Z"
+              fill="#1e40af"
+            />
+          </svg>
+          <span className="hidden text-base font-bold tracking-tight text-slate-900 md:inline">
+            FlowForge
           </span>
         </Link>
 
-        {/* Collapse sidebar — icon representing a sidebar, not a menu */}
+        {/* Collapse sidebar — icon representing a sidebar */}
         <button
           onClick={onToggleSidebar}
           className="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100"
